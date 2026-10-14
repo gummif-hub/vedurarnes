@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Veðurskjár Þjórsárskóla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* =====================================================================
+   STILLINGAR – breyttu hér ef skólinn eða staðsetningin breytist.
+   (Stillingarnar sjálfar eru í <script> neðst: LAT, LON, HÆÐ, NAFN)
+   Útlit: jökulvatnsblár grunnur (Þjórsá), raf-gulur sólarlitur sem áhersla.
+   Uppsetning: stór „Núna"-reitur + fataráð efst, skóladagurinn í ræmu,
+   næstu dagar neðst. Hannað fyrir 16:9 sjónvarp, staflast í síma.
+   ===================================================================== */
+:root{
+  --bg:#0f2a31;          /* djúpt jökulvatn */
+  --panel:#163a43;       /* reitir */
+  --panel-2:#1c4651;     /* ræma / núverandi klst */
+  --line:#2a5865;
+  --fg:#ecf5f3;
+  --muted:#9dbdbd;
+  --sun:#ffc14d;         /* áhersla, sól, dagsbirta */
+  --cold:#8fd6ff;        /* frost */
+  --warn:#ffb020;        /* hvasst / hálka */
+  --alert:#ff6b57;       /* mjög hvasst */
+  --ok:#7fdc9f;
+  --f-display:"Barlow Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+  font-size:clamp(14px,1.15vw,28px);  /* skalast með skjástærð */
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font-family:var(--f-body);line-height:1.35;
+  -webkit-font-smoothing:antialiased;
+}
+.screen{
+  min-height:100%;
+  display:grid;gap:1.1rem;
+  grid-template-columns:1.35fr 1fr;
+  grid-template-rows:auto auto auto auto;
+  grid-template-areas:
+    "head head"
+    "now  wear"
+    "hours hours"
+    "days days";
+  padding-block:1.4rem;
+  padding-left:max(1.6rem, env(safe-area-inset-left,0px));
+  padding-right:max(1.6rem, env(safe-area-inset-right,0px));
+  max-width:2400px;margin:0 auto;
+}
+.num{font-family:var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.label{
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted);font-weight:700;
+}
+
+/* ---- Haus ---- */
+header{grid-area:head;display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  border-bottom:2px solid var(--line);padding-bottom:.8rem}
+.school{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.school h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:2.6rem;line-height:1;text-wrap:balance}
+.school .sub{color:var(--muted);font-size:1.05rem}
+.clockwrap{text-align:right}
+.clock{font-size:4.2rem;font-weight:600;line-height:.9}
+.date{color:var(--muted);font-size:1.1rem}
+.date::first-letter{text-transform:uppercase}
+
+/* ---- Núna ---- */
+.now{grid-area:now;background:var(--panel);border-radius:14px;padding:1.4rem 1.6rem;
+  display:grid;grid-template-columns:auto 1fr;gap:.6rem 1.8rem;align-items:center;min-width:0}
+.now .big{display:flex;align-items:center;gap:1rem}
+.now .icon{width:7.5rem;height:7.5rem;flex:none}
+.temp{font-size:9rem;font-weight:700;line-height:.85}
+.temp sup{font-size:.4em;font-weight:600;vertical-align:.95em;margin-left:.05em;color:var(--muted)}
+.cond{font-size:1.9rem;font-weight:700;line-height:1.1}
+.feels{color:var(--muted);font-size:1.1rem;margin-top:.2rem}
+.facts{grid-column:1 / -1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;
+  border-top:1px solid var(--line);padding-top:1rem;margin-top:.4rem}
+.fact{display:flex;flex-direction:column;gap:.2rem;min-width:0}
+.fact .v{font-size:2.3rem;font-weight:600;line-height:1;display:flex;align-items:center;gap:.4rem}
+.fact .v small{font-size:.55em;color:var(--muted);font-weight:500}
+.fact .s{color:var(--muted);font-size:.95rem}
+.arrow{width:1.6rem;height:1.6rem;flex:none;transition:transform .6s}
+
+/* ---- Útiföt ---- */
+.wear{grid-area:wear;background:var(--panel);border-radius:14px;padding:1.4rem 1.6rem;
+  display:flex;flex-direction:column;gap:.9rem;min-width:0}
+.wear h2{margin:0;font-family:var(--f-display);font-size:2.2rem;font-weight:700;line-height:1}
+.wear .for{color:var(--muted);font-size:1rem;margin-top:-.5rem}
+.wear ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.55rem}
+.wear li{display:flex;gap:.7rem;align-items:flex-start;font-size:1.35rem;line-height:1.25}
+.wear li::before{content:"";width:.6rem;height:.6rem;border-radius:50%;background:var(--sun);flex:none;margin-top:.5rem}
+.flags{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:auto}
+.flag{border-radius:999px;padding:.35rem .9rem;font-weight:700;font-size:1.05rem;border:2px solid currentColor}
+.flag.warn{color:var(--warn)}
+.flag.alert{color:var(--alert);background:color-mix(in srgb,var(--alert) 14%,transparent)}
+.flag.ok{color:var(--ok)}
+.flag.cold{color:var(--cold)}
+
+/* ---- Skóladagurinn ---- */
+.hours{grid-area:hours;display:flex;flex-direction:column;gap:.6rem;min-width:0}
+.hours .head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:baseline}
+.strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(5.2rem,1fr);gap:.5rem;overflow-x:auto}
+.hr{background:var(--panel);border-radius:10px;padding:.7rem .4rem;display:flex;flex-direction:column;align-items:center;gap:.25rem;text-align:center}
+.hr.cur{background:var(--panel-2);outline:2px solid var(--sun);outline-offset:-2px}
+.hr .t{font-size:1.25rem;font-weight:600;color:var(--muted)}
+.hr.cur .t{color:var(--sun)}
+.hr svg{width:2.8rem;height:2.8rem}
+.hr .tp{font-size:2.1rem;font-weight:700;line-height:1}
+.hr .w{font-size:1rem;color:var(--muted)}
+.hr .p{font-size:.95rem;color:var(--cold);min-height:1.2em}
+
+/* ---- Næstu dagar ---- */
+.days{grid-area:days;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.1fr);gap:.6rem}
+.day{background:var(--panel);border-radius:10px;padding:.8rem 1rem;display:grid;grid-template-columns:auto 1fr;gap:.1rem .8rem;align-items:center}
+.day .n{grid-column:1 / -1;font-weight:700;font-size:1.15rem}
+.day svg{width:3rem;height:3rem;grid-row:span 2}
+.day .mm{font-size:1.9rem;font-weight:600;line-height:1}
+.day .mm .lo{color:var(--muted);font-size:.8em}
+.day .x{color:var(--muted);font-size:.95rem}
+.sunbox{background:transparent;border:2px solid var(--line);border-radius:10px;padding:.8rem 1rem;display:flex;flex-direction:column;justify-content:center;gap:.3rem}
+.sunbox .row{display:flex;justify-content:space-between;gap:.6rem;font-size:1.1rem}
+.sunbox .row b{font-family:var(--f-display);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums}
+
+footer{grid-column:1 / -1;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
+footer .stale{color:var(--warn);font-weight:700}
+
+.neg{color:var(--cold)}
+.pos{color:var(--fg)}
+.sunc{color:var(--sun)}
+
+/* Þröngir skjáir / sími */
+@media (max-width:900px){
+  :root{font-size:15px}
+  .screen{grid-template-columns:1fr;grid-template-areas:"head" "now" "wear" "hours" "days";
+    padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px))}
+  .temp{font-size:6.5rem}
+  .now .icon{width:5rem;height:5rem}
+  .now{grid-template-columns:1fr}
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .days{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sunbox{grid-column:1 / -1}
+  .clock{font-size:3rem}
+  .school h1{font-size:2rem}
+}
+@media (prefers-reduced-motion:reduce){.arrow{transition:none}}
+</style>
+</head>
+<body>
+<main class="screen" id="app">
+  <header>
+    <div class="school">
+      <h1 id="schoolName">Þjórsárskóli</h1>
+      <div class="sub" id="placeName">Veðrið í Árnesi</div>
+    </div>
+    <div class="clockwrap">
+      <div class="clock num" id="clock">--:--</div>
+      <div class="date" id="date"></div>
+    </div>
+  </header>
+
+  <section class="now" aria-label="Veðrið núna">
+    <div class="big">
+      <div class="icon" id="nowIcon"></div>
+      <div class="temp num" id="nowTemp">–<sup>°C</sup></div>
+    </div>
+    <div>
+      <div class="cond" id="nowCond">Sæki veðurgögn…</div>
+      <div class="feels" id="nowFeels"></div>
+    </div>
+    <div class="facts">
+      <div class="fact"><span class="label">Vindur</span><span class="v num" id="wind">–</span><span class="s" id="windName"></span></div>
+      <div class="fact"><span class="label">Hviður</span><span class="v num" id="gust">–</span><span class="s">mesta hviða</span></div>
+      <div class="fact"><span class="label">Úrkoma</span><span class="v num" id="precip">–</span><span class="s" id="precipNext"></span></div>
+      <div class="fact"><span class="label">Dagsbirta</span><span class="v num" id="daylen">–</span><span class="s" id="sunTimes"></span></div>
+    </div>
+  </section>
+
+  <section class="wear" aria-label="Útiföt">
+    <h2>Hverju á að klæðast úti?</h2>
+    <div class="for" id="wearFor"></div>
+    <ul id="wearList"></ul>
+    <div class="flags" id="flags"></div>
+  </section>
+
+  <section class="hours" aria-label="Spá yfir skóladaginn">
+    <div class="head"><span class="label" id="hoursTitle">Skóladagurinn</span><span class="label" id="hoursNote"></span></div>
+    <div class="strip" id="strip"></div>
+  </section>
+
+  <section class="days" id="days" aria-label="Næstu dagar"></section>
+
+  <footer>
+    <span id="updated">Veðurgögn: Open-Meteo</span>
+    <span>Spálíkön um Open-Meteo · Veðurstöð Árnesi: vedur.is</span>
+  </footer>
+</main>
+
+<script>
+/* =====================================================================
+   STILLINGAR
+   ===================================================================== */
+const CONFIG = {
+  skoli: "Þjórsárskóli",
+  stadur: "Veðrið í Árnesi",
+  lat: 64.0405,          // Veðurstöð Árnesi (vedur.is, stöð 6420)
+  lon: -20.2521,
+  haed: 87,              // m y.s.
+  skolabyrjun: 8,        // fyrsta klst sem sýnd er í ræmu
+  skolalok: 15,          // eftir þetta sýnir skjárinn morgundaginn
+  uppfaera_min: 10       // hversu oft veðurgögn eru sótt (mínútur)
+};
+
+const TZ = "Atlantic/Reykjavik";
+const DAGAR = ["sunnudagur","mánudagur","þriðjudagur","miðvikudagur","fimmtudagur","föstudagur","laugardagur"];
+const DAGAR_STUTT = ["Sun","Mán","Þri","Mið","Fim","Fös","Lau"];
+const MAN = ["janúar","febrúar","mars","apríl","maí","júní","júlí","ágúst","september","október","nóvember","desember"];
+const ATTIR = ["N","NNA","NA","ANA","A","ASA","SA","SSA","S","SSV","SV","VSV","V","VNV","NV","NNV"];
+const ATTIR_ORD = {N:"norðan",NNA:"norðnorðaustan",NA:"norðaustan",ANA:"austnorðaustan",A:"austan",ASA:"austsuðaustan",SA:"suðaustan",SSA:"suðsuðaustan",S:"sunnan",SSV:"suðsuðvestan",SV:"suðvestan",VSV:"vestsuðvestan",V:"vestan",VNV:"vestnorðvestan",NV:"norðvestan",NNV:"norðnorðvestan"};
+
+/* Vindstigaheiti Veðurstofunnar (m/s) */
+const VINDHEITI = [[0.3,"logn"],[1.6,"andvari"],[3.4,"kul"],[5.5,"gola"],[8.0,"stinningsgola"],[10.8,"kaldi"],[13.9,"stinningskaldi"],[17.2,"allhvass vindur"],[20.8,"hvassviðri"],[24.5,"stormur"],[28.5,"rok"],[32.7,"ofsaveður"],[Infinity,"fárviðri"]];
+const vindheiti = v => VINDHEITI.find(([max]) => v < max)[1];
+
+/* WMO veðurkóðar → íslenska */
+function lysing(c){
+  const m = {
+    0:"Heiðskírt",1:"Léttskýjað",2:"Hálfskýjað",3:"Skýjað",45:"Þoka",48:"Hrímþoka",
+    51:"Lítils háttar súld",53:"Súld",55:"Þétt súld",56:"Frostúði",57:"Frostúði",
+    61:"Lítils háttar rigning",63:"Rigning",65:"Mikil rigning",66:"Frostrigning",67:"Frostrigning",
+    71:"Lítils háttar snjókoma",73:"Snjókoma",75:"Mikil snjókoma",77:"Snjókorn",
+    80:"Skúrir",81:"Skúrir",82:"Miklar skúrir",85:"Él",86:"Dimm él",
+    95:"Þrumuveður",96:"Þrumuveður með hagli",99:"Þrumuveður með hagli"
+  };
+  return m[c] ?? "—";
+}
+const erSnjor = c => [71,73,75,77,85,86].includes(c);
+const erRegn  = c => [51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(c);
+
+/* ---- Tákn (einföld SVG, teiknuð hér svo skjárinn þurfi engar myndir) ---- */
+const SUN = (cx,cy,r)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sun)"/>` +
+  [...Array(8)].map((_,i)=>{const a=i*Math.PI/4,x1=cx+Math.cos(a)*(r+4),y1=cy+Math.sin(a)*(r+4),x2=cx+Math.cos(a)*(r+9),y2=cy+Math.sin(a)*(r+9);
+  return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--sun)" stroke-width="3" stroke-linecap="round"/>`}).join("");
+const MOON = (cx,cy,r)=>`<path d="M${cx+r*0.3} ${cy-r} a${r} ${r} 0 1 0 ${r*0.7} ${r*1.55} a${r*0.8} ${r*0.8} 0 0 1 -${r*0.7} -${r*1.55}z" fill="var(--muted)"/>`;
+const CLOUD = (dx=0,dy=0,col="var(--fg)")=>`<path transform="translate(${dx} ${dy})" d="M18 52h30a11 11 0 0 0 1-22 15 15 0 0 0-29-3 10 10 0 0 0-2 25z" fill="${col}" />`;
+function ikon(code, dagur=1){
+  const sky = dagur ? SUN : MOON;
+  let s = "";
+  if (code===0) s = dagur ? SUN(32,32,12) : MOON(32,32,13);
+  else if (code===1||code===2) s = (dagur?SUN(24,24,9):MOON(24,22,10)) + CLOUD(4,6);
+  else if (code===3) s = CLOUD(-6,-4,"var(--muted)") + CLOUD(4,4);
+  else if (code===45||code===48) s = [24,32,40,48].map((y,i)=>`<line x1="${10+i%2*4}" y1="${y}" x2="${54-i%2*4}" y2="${y}" stroke="var(--muted)" stroke-width="3.5" stroke-linecap="round"/>`).join("");
+  else if (erSnjor(code)) s = CLOUD(0,-8) + [[22,52],[34,56],[46,52]].map(([x,y])=>`<g stroke="var(--cold)" stroke-width="2.5" stroke-linecap="round"><line x1="${x-4}" y1="${y}" x2="${x+4}" y2="${y}"/><line x1="${x-2}" y1="${y-3.5}" x2="${x+2}" y2="${y+3.5}"/><line x1="${x+2}" y1="${y-3.5}" x2="${x-2}" y2="${y+3.5}"/></g>`).join("");
+  else if (code>=95) s = CLOUD(0,-8,"var(--muted)") + `<path d="M34 44l-6 10h7l-4 9 11-13h-7l4-6z" fill="var(--sun)"/>`;
+  else if (erRegn(code)) {
+    const n = [51,56,61,80].includes(code) ? 2 : 3;
+    s = (code>=80 && dagur ? SUN(46,16,7) : "") + CLOUD(0,-8) + [22,32,42].slice(0,n).map(x=>`<line x1="${x}" y1="50" x2="${x-4}" y2="60" stroke="var(--cold)" stroke-width="3" stroke-linecap="round"/>`).join("");
+  }
+  else s = CLOUD();
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${s}</svg>`;
+}
+const ORVI = deg => `<svg class="arrow" viewBox="0 0 24 24" style="transform:rotate(${(deg+180)%360}deg)" aria-hidden="true"><path d="M12 2l6 18-6-4-6 4z" fill="var(--sun)"/></svg>`;
+
+/* ---- Hjálparföll ---- */
+const $ = id => document.getElementById(id);
+const att = deg => ATTIR[Math.round(deg/22.5)%16];
+const hiti = t => { const r = Math.round(t); return `<span class="${r<0?'neg':'pos'}">${r===0?0:r}°</span>`; };
+const klst = s => s.slice(11,16);
+function nuna(){            // "YYYY-MM-DDTHH:MM" í Reykjavík
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+const dagsFra = iso => { const [y,m,d]=iso.slice(0,10).split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
+
+/* ---- Klukka ---- */
+function tikk(){
+  const n = nuna(), d = dagsFra(n);
+  $("clock").textContent = n.slice(11,16);
+  $("date").textContent = `${DAGAR[d.getUTCDay()]} ${d.getUTCDate()}. ${MAN[d.getUTCMonth()]}`;
+}
+
+/* ---- Fataráð ---- */
+function fatarad(tim){
+  // tim: klukkustundir sem eiga við (skóladagurinn)
+  const kaldast = Math.min(...tim.map(h=>h.feels));
+  const vindur  = Math.max(...tim.map(h=>h.wind));
+  const hvida   = Math.max(...tim.map(h=>h.gust));
+  const urkoma  = tim.reduce((a,h)=>a+h.precip,0);
+  const snjor   = tim.some(h=>erSnjor(h.code) && h.precip>0) || (urkoma>0.2 && Math.min(...tim.map(h=>h.temp))<=0.5);
+  const regn    = !snjor && (urkoma>=0.3 || tim.some(h=>erRegn(h.code) && h.precip>0.1));
+  const frostRegn = tim.some(h=>[56,57,66,67].includes(h.code));
+
+  const listi = [];
+  if (kaldast <= -5)      listi.push("Kuldagalli eða hlý úlpa og ullarföt innst", "Húfa, buff og hlýir vettlingar", "Kuldaskór");
+  else if (kaldast <= 3)  listi.push("Hlý úlpa eða kuldagalli", "Húfa og vettlingar", "Hlýir skór");
+  else if (kaldast <= 8)  listi.push("Úlpa eða hlý peysa undir jakka", "Gott að hafa húfu og vettlinga");
+  else if (kaldast <= 13) listi.push("Jakki eða peysa");
+  else                    listi.push("Létt peysa eða bolur dugar");
+
+  if (snjor)      listi.push("Snjóbuxur og vatnsheldir vettlingar", "Aukavettlingar í töskuna");
+  else if (regn)  listi.push("Pollagalli og stígvél");
+  if (vindur >= 8 && !snjor && !regn) listi.push("Vindheldur jakki – það er kalt í vindinum");
+
+  const flogg = [];
+  if (vindur >= 15 || hvida >= 20)      flogg.push(["alert","Mjög hvasst – metið útiveru"]);
+  else if (vindur >= 10 || hvida >= 15) flogg.push(["warn","Hvasst"]);
+  const minT = Math.min(...tim.map(h=>h.temp)), maxT = Math.max(...tim.map(h=>h.temp));
+  if (frostRegn || (urkoma>0.1 && minT<=1.5 && maxT>=-2)) flogg.push(["warn","Hálkuhætta"]);
+  if (kaldast <= -10) flogg.push(["cold","Mikill kuldi"]);
+  if (!flogg.length) flogg.push(["ok","Gott útiveður"]);
+  return {listi, flogg, kaldast};
+}
+
+/* ---- Sækja og birta ---- */
+let sidast = null;
+async function saekja(){
+  const url = "https://api.open-meteo.com/v1/forecast?" + new URLSearchParams({
+    latitude: CONFIG.lat, longitude: CONFIG.lon, elevation: CONFIG.haed,
+    current: "temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day",
+    hourly: "temperature_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset,daylight_duration",
+    wind_speed_unit: "ms", timezone: TZ, forecast_days: 6
+  });
+  try{
+    const r = await fetch(url, {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    sidast = Date.now();
+    birta(d);
+  }catch(e){
+    console.warn("Gat ekki sótt veður:", e);
+    if (!sidast) $("nowCond").textContent = "Næ ekki sambandi við veðurþjónustu – reyni aftur bráðlega";
+  }
+  merkjaUppfaerslu();
+}
+
+function birta(d){
+  const c = d.current, H = d.hourly, D = d.daily;
+  const n = nuna();
+  const idag = n.slice(0,10);
+
+  /* Núna */
+  $("nowIcon").innerHTML = ikon(c.weather_code, c.is_day);
+  $("nowTemp").innerHTML = `${hiti(c.temperature_2m).replace("°","")}<sup>°C</sup>`;
+  $("nowCond").textContent = lysing(c.weather_code);
+  $("nowFeels").innerHTML = `Finnst eins og ${hiti(c.apparent_temperature)}`;
+  const a = att(c.wind_direction_10m);
+  $("wind").innerHTML = `${ORVI(c.wind_direction_10m)}${Math.round(c.wind_speed_10m)}<small>m/s</small>`;
+  $("windName").textContent = `${vindheiti(c.wind_speed_10m)} af ${ATTIR_ORD[a]} (${a})`.replace(/^logn af.*$/,"logn");
+  $("gust").innerHTML = `${Math.round(c.wind_gusts_10m)}<small>m/s</small>`;
+
+  /* Úrkoma næstu 3 klst */
+  const i0 = Math.max(0, H.time.findIndex(t => t.slice(0,13) === n.slice(0,13)));
+  const naesta = H.precipitation.slice(i0, i0+3).reduce((s,v)=>s+v,0);
+  $("precip").innerHTML = `${c.precipitation.toFixed(1).replace(".",",")}<small>mm</small>`;
+  $("precipNext").textContent = naesta >= 0.1 ? `${naesta.toFixed(1).replace(".",",")} mm næstu 3 klst` : "þurrt næstu 3 klst";
+
+  /* Dagsbirta */
+  const lengd = D.daylight_duration[0]/3600, h = Math.floor(lengd), m = Math.round((lengd-h)*60);
+  $("daylen").innerHTML = `${h}<small>klst</small> ${m}<small>mín</small>`;
+  $("sunTimes").textContent = `sól ${klst(D.sunrise[0])} – ${klst(D.sunset[0])}`;
+
+  /* Hvaða dagur gildir í ræmunni */
+  const klNu = Number(n.slice(11,13));
+  const morgundagur = klNu >= CONFIG.skolalok;
+  const dagurIdx = morgundagur ? 1 : 0;
+  const dagStr = D.time[dagurIdx];
+  const dagD = dagsFra(dagStr);
+  const helgi = dagD.getUTCDay()===0 || dagD.getUTCDay()===6;
+
+  const tim = [];
+  H.time.forEach((t,i)=>{
+    if (t.slice(0,10)!==dagStr) return;
+    const k = Number(t.slice(11,13));
+    if (k < CONFIG.skolabyrjun || k > CONFIG.skolalok + 1) return;
+    tim.push({t, k, temp:H.temperature_2m[i], feels:H.apparent_temperature[i], precip:H.precipitation[i],
+      prob:H.precipitation_probability?.[i], code:H.weather_code[i], wind:H.wind_speed_10m[i], gust:H.wind_gusts_10m[i],
+      dir:H.wind_direction_10m[i], day:H.is_day[i]});
+  });
+
+  $("hoursTitle").textContent = morgundagur
+    ? `Á morgun · ${DAGAR[dagD.getUTCDay()]} ${dagD.getUTCDate()}. ${MAN[dagD.getUTCMonth()]}`
+    : "Skóladagurinn í dag";
+  $("hoursNote").textContent = helgi ? "Helgi – enginn skóli" : `kl. ${String(CONFIG.skolabyrjun).padStart(2,"0")}–${CONFIG.skolalok+1}`;
+
+  $("strip").innerHTML = tim.map(x=>{
+    const cur = !morgundagur && x.k===klNu;
+    const p = x.precip >= 0.1 ? `${x.precip.toFixed(1).replace(".",",")} mm` : "";
+    return `<div class="hr${cur?' cur':''}">
+      <span class="t num">${cur?'Núna':String(x.k).padStart(2,"0")+':00'}</span>
+      ${ikon(x.code, x.day)}
+      <span class="tp num">${hiti(x.temp)}</span>
+      <span class="w">${Math.round(x.wind)} m/s ${att(x.dir)}</span>
+      <span class="p">${p}</span>
+    </div>`;
+  }).join("");
+
+  /* Fataráð: frá núverandi klst út skóladaginn (eða allur morgundagurinn) */
+  const radTim = morgundagur ? tim : tim.filter(x=>x.k>=klNu);
+  const rad = fatarad(radTim.length ? radTim : tim);
+  $("wearFor").textContent = morgundagur
+    ? `Fyrir morgundaginn · kaldast ${Math.round(rad.kaldast)}° með vindkælingu`
+    : `Það sem eftir er dags · kaldast ${Math.round(rad.kaldast)}° með vindkælingu`;
+  $("wearList").innerHTML = rad.listi.map(x=>`<li>${x}</li>`).join("");
+  $("flags").innerHTML = rad.flogg.map(([k,t])=>`<span class="flag ${k}">${t}</span>`).join("");
+
+  /* Næstu dagar */
+  const dagar = [];
+  for (let i=1;i<=4 && i<D.time.length;i++){
+    const dd = dagsFra(D.time[i]);
+    const nafn = i===1 ? "Á morgun" : `${DAGAR_STUTT[dd.getUTCDay()]} ${dd.getUTCDate()}.`;
+    const ur = D.precipitation_sum[i];
+    dagar.push(`<div class="day">
+      <span class="n">${nafn}</span>
+      ${ikon(D.weather_code[i],1)}
+      <span class="mm num">${hiti(D.temperature_2m_max[i])} <span class="lo">/ ${hiti(D.temperature_2m_min[i])}</span></span>
+      <span class="x">${Math.round(D.wind_speed_10m_max[i])} m/s${ur>=0.1?` · ${ur.toFixed(1).replace(".",",")} mm`:""}</span>
+    </div>`);
+  }
+  // Dagsbirtan styttist/lengist
+  const breyting = Math.round((D.daylight_duration[1]-D.daylight_duration[0])/60);
+  dagar.push(`<div class="sunbox">
+    <span class="label">Sólin í dag</span>
+    <div class="row"><span>Sólarupprás</span><b class="sunc">${klst(D.sunrise[0])}</b></div>
+    <div class="row"><span>Sólarlag</span><b>${klst(D.sunset[0])}</b></div>
+    <div class="row"><span>Á morgun</span><span>${breyting<0?`${-breyting} mín styttri`:breyting>0?`${breyting} mín lengri`:"jafnlangur"}</span></div>
+  </div>`);
+  $("days").innerHTML = dagar.join("");
+}
+
+function merkjaUppfaerslu(){
+  if (!sidast){ $("updated").textContent = "Veðurgögn: Open-Meteo"; return; }
+  const min = Math.round((Date.now()-sidast)/60000);
+  const t = new Intl.DateTimeFormat("is-IS",{timeZone:TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(sidast));
+  $("updated").innerHTML = min > CONFIG.uppfaera_min*3
+    ? `<span class="stale">Gögn ekki uppfærð síðan kl. ${t} – athugið nettengingu</span>`
+    : `Uppfært kl. ${t} · Veðurgögn: Open-Meteo`;
+}
+
+/* ---- Ræsing ---- */
+$("schoolName").textContent = CONFIG.skoli;
+$("placeName").textContent = CONFIG.stadur;
+tikk(); setInterval(tikk, 1000);
+saekja(); setInterval(saekja, CONFIG.uppfaera_min*60*1000);
+setInterval(merkjaUppfaerslu, 60*1000);
+// Endurhlaða síðuna einu sinni á nóttu svo nýjar útgáfur skili sér á sjónvarpið
+setInterval(()=>{ if (nuna().slice(11,16)==="03:30") location.reload(); }, 60*1000);
+// Halda skjánum vakandi þar sem vafrinn leyfir
+(async()=>{ try{ await navigator.wakeLock?.request("screen"); }catch(e){} })();
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ navigator.wakeLock?.request("screen").catch(()=>{}); } });
+</script>
+</body>
+</html>
