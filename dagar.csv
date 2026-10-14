@@ -1,14 +1,17 @@
-fra,til,heiti,frodleikur
+fra,til,heiti,frodleikur,fani
 # Línur sem byrja á # eru minnispunktar og birtast ekki.
 # "til" má vera autt ef viðburðurinn er bara einn dag. Setjið gæsalappir utan um texta sem inniheldur kommu.
+# Dálkurinn "fani": skrifið íslenski á fánadögum (þá blaktir íslenski fáninn á skjánum) eða hálfstöng (fáninn í hálfa stöng).
 # Dæmi um smiðjudaga (takið # af og setjið réttar dagsetningar):
 # 2026-11-04,2026-11-06,Smiðjudagar,"Allir nemendur velja sér smiðju: smíði, matreiðslu, listir eða útivist."
 2026-10-24,,Fyrsti vetrardagur,"Í gamla íslenska tímatalinu skiptist árið í tvö misseri, vetur og sumar. Veturinn byrjar á laugardegi seint í október."
 2026-11-08,,Dagur gegn einelti,"Við stöndum saman, erum góð hvert við annað og látum vita ef einhver er skilinn útundan."
-2026-11-16,,Dagur íslenskrar tungu,"Fæðingardagur Jónasar Hallgrímssonar skálds (1807). Hann bjó til orð eins og aðdráttarafl og sporbaugur."
+2026-11-16,,Dagur íslenskrar tungu,"Fánadagur! Fæðingardagur Jónasar Hallgrímssonar skálds (1807). Hann bjó til orð eins og aðdráttarafl.",íslenski
 2026-11-20,,Dagur mannréttinda barna,"Barnasáttmálinn var samþykktur þennan dag árið 1989. Öll börn eiga rétt á að leika sér, læra og segja sína skoðun."
-2026-12-01,,Fullveldisdagurinn,"Ísland varð fullvalda ríki 1. desember 1918."
+2026-12-01,,Fullveldisdagurinn,"Fánadagur! Ísland varð fullvalda ríki 1. desember 1918.",íslenski
 2026-12-21,,Vetrarsólstöður,"Stysti dagur ársins. Héðan í frá fer daginn að lengja aftur!"
+2026-12-25,,Jóladagur,"Fánadagur! Gleðileg jól.",íslenski
+2027-01-01,,Nýársdagur,"Fánadagur! Gleðilegt nýtt ár.",íslenski
 2027-01-06,,Þrettándinn,"Síðasti dagur jóla. Þá fer síðasti jólasveinninn heim til fjalla."
 2027-01-22,,Bóndadagur,"Fyrsti dagur þorra í gamla tímatalinu. Margir borða þorramat á þorranum."
 2027-02-08,,Bolludagur,"Í dag borðum við bollur með rjóma og sultu!"
@@ -17,5 +20,12 @@ fra,til,heiti,frodleikur
 2027-02-11,,Dagur íslenska táknmálsins,"Íslenskt táknmál er móðurmál heyrnarlausra á Íslandi. Það hefur verið viðurkennt í lögum síðan 2011."
 2027-02-21,,Konudagur,"Fyrsti dagur góu í gamla tímatalinu."
 2027-03-20,,Vorjafndægur,"Í dag eru dagur og nótt nánast jafnlöng um alla jörð."
-2027-04-22,,Sumardagurinn fyrsti,"Fyrsti dagur hörpu í gamla tímatalinu. Gleðilegt sumar!"
+2027-03-26,,Föstudagurinn langi,"Fánadagur. Á föstudaginn langa er fáninn dreginn í hálfa stöng.",hálfstöng
+2027-03-28,,Páskadagur,"Fánadagur! Gleðilega páska.",íslenski
+2027-04-22,,Sumardagurinn fyrsti,"Fánadagur! Fyrsti dagur hörpu í gamla tímatalinu. Gleðilegt sumar!",íslenski
+2027-05-01,,Baráttudagur verkalýðsins,"Fánadagur! Alþjóðlegur dagur verkafólks.",íslenski
+2027-05-16,,Hvítasunnudagur,"Fánadagur! Hvítasunna er 50 dögum eftir páska.",íslenski
+2027-06-06,,Sjómannadagurinn,"Fánadagur! Við heiðrum sjómenn sem sækja sjóinn.",íslenski
+2027-06-17,,Þjóðhátíðardagurinn,"Fánadagur! Lýðveldið Ísland var stofnað 17. júní 1944 á Þingvöllum.",íslenski
 2027-09-16,,Dagur íslenskrar náttúru,"Haldinn á afmælisdegi Ómars Ragnarssonar, sem hefur barist fyrir íslenskri náttúru. Förum út!"
+2027-10-11,,Afmæli forseta Íslands,"Fánadagur! Halla Tómasdóttir forseti á afmæli í dag.",íslenski
