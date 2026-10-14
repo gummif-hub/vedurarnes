@@ -66,6 +66,11 @@ header .t span{color:var(--sun)}
 .kid{grid-area:kid;justify-content:space-between;background:linear-gradient(180deg,#59b3ff 0%,var(--sky) 45%,var(--sky-2) 100%)}
 .kid.nott{background:linear-gradient(180deg,#3a4fb8 0%,#2b3c9e 50%,#1f2c80 100%)}
 .bubble{background:#fff;color:#16306b;border-radius:20px;padding:.75rem 1rem;font-weight:700;font-size:1.12rem;line-height:1.3;position:relative;z-index:2}
+.bubble.tilkynning{background:#ffd21f;color:#3d2600;font-size:1.55rem;font-family:var(--f-display);font-weight:800;line-height:1.15;animation:blodra 1.6s ease-in-out infinite}
+.bubble.tilkynning::after{border-top-color:#ffd21f}
+@keyframes blodra{50%{transform:scale(1.04)}}
+.stage.hopp svg.kidsvg{animation:hopp .9s ease-in-out infinite}
+@keyframes hopp{0%,100%{transform:translateY(0)}40%{transform:translateY(-1.6rem)}60%{transform:translateY(-1.6rem)}}
 .bubble::after{content:"";position:absolute;left:50%;bottom:-.7rem;border:.7rem solid transparent;border-bottom:0;border-top-color:#fff;transform:translateX(-50%)}
 .stage{position:relative;flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;z-index:1}
 .stage svg.kidsvg{height:100%;max-height:32rem;width:auto;max-width:100%}
@@ -335,7 +340,19 @@ const CONFIG = {
 
   // Matseðill: CSV-skrá í sömu möppu (dags,matur) eða slóð á Google-töflu
   // sem gefin er út sem CSV (Skrá → Deila → Gefa út á vefnum → CSV)
-  matsedill: "matsedill.csv"
+  matsedill: "matsedill.csv",
+
+  // Stundaskrá: barnið segir frá þessu í talblöðrunni (aðeins virka daga).
+  // „fyrir" birtist síðustu 5 mínúturnar áður ({min} = mínútur sem eru eftir),
+  // „byrjar" á meðan og „eftir" fyrstu 5 mínúturnar á eftir.
+  dagskra: [
+    { fra: "09:45", til: "10:05", heiti: "morgunmat og frímínútur",
+      byrjar: "Förum og fáum okkur hafragraut og svo út að leika!",
+      eftir: "Förum aftur í tíma!" },
+    { fra: "12:05", til: "12:45", heiti: "hádegismat",
+      byrjar: "Förum í hádegismat og svo út að leika!",
+      eftir: "Förum aftur í tíma!" }
+  ]
 };
 
 const TZ = "Atlantic/Reykjavik";
@@ -820,7 +837,8 @@ function birta(){
   document.documentElement.style.setProperty("--flut", `${Math.max(.4, 1.6 - v*.07).toFixed(2)}s`);
   document.documentElement.style.setProperty("--flut-deg", `${Math.min(22, 6 + v).toFixed(0)}deg`);
   $("wearLine").textContent = lina;
-  $("bubble").textContent = `Hæ, ég heiti ${barn.nafn}${galdur ? " og er í galdraskóla" : ""}! ${LYSING[c.weather_code] ?? ""} og ${r0(t)} stiga hiti. Svona klæði ég mig úti núna:`;
+  vedurBlodra = `Hæ, ég heiti ${barn.nafn}${galdur ? " og er í galdraskóla" : ""}! ${LYSING[c.weather_code] ?? ""} og ${r0(t)} stiga hiti. Svona klæði ég mig úti núna:`;
+  birtaBlodru();
   effekt({rainNow, snowNow, wind:v, sunny, dagur});
 
   /* Vindur og Grænfáni */
@@ -881,6 +899,31 @@ function birta(){
     return `<div class="hr${cur?' cur':''}"><span class="t">${cur?'Núna':k+':00'}</span>${ikon(H.weather_code[i], H.is_day[i])}<span class="tp">${deg(H.temperature_2m[i])}</span><span class="w">${r0(H.wind_speed_10m[i])} m/s</span></div>`; }).join("");
 }
 
+/* ---- Stundaskrá í talblöðrunni ---- */
+const MIN_ORD = ["", "ein mínúta", "tvær mínútur", "þrjár mínútur", "fjórar mínútur", "fimm mínútur"];
+const kl2min = s => Number(s.slice(0,2))*60 + Number(s.slice(3,5));
+function stundaskraBod(minNu, vikudagur){
+  if (vikudagur === 0 || vikudagur === 6) return null;
+  for (const d of CONFIG.dagskra){
+    const fra = kl2min(d.fra), til = kl2min(d.til);
+    if (minNu >= fra - 5 && minNu < fra){
+      const eftir = fra - minNu;
+      return { texti: `Það ${eftir === 1 ? "er" : "eru"} ${MIN_ORD[eftir]} í ${d.heiti}!`, hopp: false };
+    }
+    if (minNu >= fra && minNu < til) return { texti: d.byrjar, hopp: true };
+    if (minNu >= til && minNu < til + 5) return { texti: d.eftir, hopp: false };
+  }
+  return null;
+}
+let vedurBlodra = "";
+function birtaBlodru(){
+  const n = nuna(), bod = stundaskraBod(minutur(n), dagsFra(n).getUTCDay());
+  const b = $("bubble");
+  if (bod){ b.textContent = bod.texti; b.classList.add("tilkynning"); }
+  else { if (vedurBlodra) b.textContent = vedurBlodra; b.classList.remove("tilkynning"); }
+  $("stage").classList.toggle("hopp", !!bod?.hopp);
+}
+
 /* ---- Klukka og staðreyndir ---- */
 function tikk(){ $("clock").textContent = nuna().slice(11,16); }
 let fIdx = Math.floor(Math.random()*STADREYNDIR.length);
@@ -895,6 +938,7 @@ teiknaFanastong();
 if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches){ fanaRammi(0); cancelAnimationFrame(FANI.rafi); }
 else FANI.rafi = requestAnimationFrame(fanaRammi);
 tikk(); setInterval(tikk, 1000);
+setInterval(birtaBlodru, 15000);
 naestaStadreynd(); setInterval(naestaStadreynd, 25000);
 uppfaera(); setInterval(uppfaera, CONFIG.uppfaera_min*60000);
 birtaTungl(); setInterval(birtaTungl, 30*60000);
