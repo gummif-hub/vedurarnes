@@ -68,7 +68,7 @@ header .t span{color:var(--sun)}
 .bubble{background:#fff;color:#16306b;border-radius:20px;padding:.75rem 1rem;font-weight:700;font-size:1.12rem;line-height:1.3;position:relative;z-index:2}
 .bubble::after{content:"";position:absolute;left:50%;bottom:-.7rem;border:.7rem solid transparent;border-bottom:0;border-top-color:#fff;transform:translateX(-50%)}
 .stage{position:relative;flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;z-index:1}
-.stage svg.kidsvg{height:100%;max-height:31rem;width:auto;max-width:100%}
+.stage svg.kidsvg{height:100%;max-height:32rem;width:auto;max-width:100%}
 .wear-line{font-family:var(--f-display);font-weight:800;font-size:2.05rem;line-height:1.05;text-align:center;text-wrap:balance;position:relative;z-index:2;text-shadow:0 .15rem 0 rgba(0,0,0,.2)}
 .fx{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .fx i{position:absolute;top:-10%;display:block}
@@ -82,6 +82,8 @@ header .t span{color:var(--sun)}
 @keyframes gust{to{transform:translateX(160%)}}
 @keyframes pulse{50%{transform:scale(1.1)}}
 @keyframes twinkle{50%{opacity:.2}}
+.kidsvg .sparkle{animation:sparkle 1.6s ease-in-out infinite;transform-origin:184px 180px;transform-box:view-box}
+@keyframes sparkle{50%{transform:scale(1.35) rotate(25deg);opacity:.6}}
 .kidsvg .body{animation:bob 2.6s ease-in-out infinite;transform-origin:110px 300px;transform-box:view-box}
 .kidsvg .lean{transform-origin:110px 300px;transform-box:view-box;transition:transform 1s}
 .kidsvg .eyes{animation:blink 5s infinite;transform-origin:110px 96px;transform-box:view-box}
@@ -197,7 +199,7 @@ header .t span{color:var(--sun)}
 
   <section class="card kid" id="kidCard" aria-label="Hverju á að klæðast">
     <div class="fx" id="fx"></div>
-    <div class="bubble" id="bubble">Hæ, ég heiti Gaukur! Ég sýni ykkur hvernig þið skuluð klæða ykkur úti.</div>
+    <div class="bubble" id="bubble">Hæ! Ég sýni ykkur hvernig þið skuluð klæða ykkur úti.</div>
     <div class="stage" id="stage"></div>
     <div class="wear-line" id="wearLine">&nbsp;</div>
   </section>
@@ -280,7 +282,16 @@ const CONFIG = {
   lat: 64.0405, lon: -20.2521, haed: 87,
   skolabyrjun: 8, skolalok: 15,
   uppfaera_min: 10,
-  nafn_barns: "Gaukur"
+
+  // Veðurbörnin skiptast á, eitt hvern dag
+  born: [ { nafn: "Gaukur", stulka: false }, { nafn: "Hekla", stulka: true } ],
+
+  // Galdraþema: börnin fá skikkju, stjörnuhatt og töfrasprota þessa daga (ÁÁÁÁ-MM-DD)
+  galdrathema: { fra: "2026-10-15", til: "2026-11-15" },
+
+  // Mynd á Grænfánann: settu myndskrá skólans í sömu möppu og þessa síðu
+  // og skrifaðu nafn hennar hér. Ef skráin finnst ekki birtist einlitur grænn fáni.
+  fanamynd: "graenfani.png"
 };
 
 const TZ = "Atlantic/Reykjavik";
@@ -365,11 +376,15 @@ function klaednadur(n){
   return {f, lina};
 }
 
-function teiknaGauk(f, vindur){
+function teiknaGauk(f, vindur, p = {}){
   const C = { bolur:"#ff4f8b", peysa:"#19b37f", jakki:"#ffb000", ulpa:"#ff5a36", galli:"#8a5cf0", polla:"#ffd21f", buxur:"#2b3f8f", hufa:"#ff5a36" };
+  if (p.stulka){ C.bolur = "#2fc4d8"; C.ulpa = "#ff4f8b"; C.hufa = "#2fc4d8"; C.jakki = "#19b37f"; }
+  const harLitur = p.stulka ? "#b8641f" : "var(--hair)";
   const skyrtuLitur = f.bolur==="peysa" ? C.peysa : C.bolur;
   const ytriLitur = f.ytri ? C[f.ytri] : null;
   const efri = ytriLitur || skyrtuLitur;
+  const dekkri = { "#ff5a36":"#d43d1d", "#ff4f8b":"#d42e6b", "#ffb000":"#d48a00", "#19b37f":"#0f7f58", "#8a5cf0":"#6a3fd4", "#ffd21f":"#d9a800", "#2fc4d8":"#1b93a6" };
+  const saumur = dekkri[efri] || "rgba(0,0,0,.25)";
   const langErmi = f.bolur!=="stutt" || !!f.ytri;
   const fotaLitur = (f.ytri==="galli"||f.ytri==="polla") ? ytriLitur : C.buxur;
   const handLitur = f.vettl ? (f.ytri==="polla" ? "#19b37f" : "#ffd21f") : "var(--skin)";
@@ -385,34 +400,50 @@ function teiknaGauk(f, vindur){
   const bolur = `<path d="M80 146 q30-12 60 0 l4 92 h-68z" fill="${efri}"/>`;
   const glans = `<ellipse cx="92" cy="166" rx="7" ry="12" fill="#fff" opacity=".28"/>`;
   const ytriSmatridi =
-    f.ytri==="ulpa"  ? `${[168,192,216].map(y=>`<path d="M80 ${y} q30 6 62 0" fill="none" stroke="#d43d1d" stroke-width="3" stroke-linecap="round"/>`).join("")}<line x1="110" y1="140" x2="110" y2="238" stroke="#ffe3d6" stroke-width="3"/>${glans}` :
-    f.ytri==="jakki" ? `<line x1="110" y1="140" x2="110" y2="238" stroke="#d48a00" stroke-width="3"/><path d="M98 140 l12 14 12-14" fill="none" stroke="#d48a00" stroke-width="3"/>${glans}` :
-    f.ytri==="galli" ? `<line x1="110" y1="140" x2="110" y2="250" stroke="#6a3fd4" stroke-width="3"/><rect x="84" y="200" width="16" height="10" rx="3" fill="#6a3fd4"/><rect x="120" y="200" width="16" height="10" rx="3" fill="#6a3fd4"/>${glans}` :
-    f.ytri==="polla" ? `<line x1="110" y1="140" x2="110" y2="238" stroke="#d9a800" stroke-width="3"/>${[160,185,210].map(y=>`<circle cx="117" cy="${y}" r="3" fill="#d9a800"/>`).join("")}${glans}` :
-    f.bolur==="peysa" ? `<path d="M96 144 q14 10 28 0" fill="none" stroke="#0f7f58" stroke-width="5"/><rect x="78" y="228" width="64" height="9" rx="4" fill="#0f7f58"/>` :
+    f.ytri==="ulpa"  ? `${[168,192,216].map(y=>`<path d="M80 ${y} q30 6 62 0" fill="none" stroke="${saumur}" stroke-width="3" stroke-linecap="round"/>`).join("")}<line x1="110" y1="140" x2="110" y2="238" stroke="#fff" stroke-width="3" opacity=".8"/>${glans}` :
+    f.ytri==="jakki" ? `<line x1="110" y1="140" x2="110" y2="238" stroke="${saumur}" stroke-width="3"/><path d="M98 140 l12 14 12-14" fill="none" stroke="${saumur}" stroke-width="3"/>${glans}` :
+    f.ytri==="galli" ? `<line x1="110" y1="140" x2="110" y2="250" stroke="${saumur}" stroke-width="3"/><rect x="84" y="200" width="16" height="10" rx="3" fill="${saumur}"/><rect x="120" y="200" width="16" height="10" rx="3" fill="${saumur}"/>${glans}` :
+    f.ytri==="polla" ? `<line x1="110" y1="140" x2="110" y2="238" stroke="${saumur}" stroke-width="3"/>${[160,185,210].map(y=>`<circle cx="117" cy="${y}" r="3" fill="${saumur}"/>`).join("")}${glans}` :
+    f.bolur==="peysa" ? `<path d="M96 144 q14 10 28 0" fill="none" stroke="${saumur}" stroke-width="5"/><rect x="78" y="228" width="64" height="9" rx="4" fill="${saumur}"/>` :
     `<path d="M110 178 l3.5 7 7.5 1-5.5 5 1.5 7.5-7-3.8-7 3.8 1.5-7.5-5.5-5 7.5-1z" fill="#ffd21f"/>`;
   const fotlegg = `<rect x="86" y="230" width="20" height="56" rx="7" fill="${fotaLitur}"/><rect x="114" y="230" width="20" height="56" rx="7" fill="${fotaLitur}"/>` + (f.ytri==="galli" ? `<rect x="84" y="226" width="52" height="20" rx="6" fill="${fotaLitur}"/>` : "");
   const hetta = f.hetta ? `<path d="M64 98 q-2-58 46-60 q48 2 46 60 q-4 34-12 40 h-68 q-8-6-12-40z" fill="${C.polla}"/><path d="M76 100 q0-44 34-46 q34 2 34 46" fill="none" stroke="#d9a800" stroke-width="3"/>` : "";
-  const har = f.hufa||f.hetta ? "" : `<path d="M70 92 q-4-46 40-48 q42 0 42 44 q-10-20-30-22 q-6 10-28 12 q-14 2-24 14z" fill="var(--hair)"/>`;
-  const hufa = f.hufa ? `<path d="M68 86 q0-44 42-46 q42 2 42 46z" fill="${C.hufa}"/><rect x="66" y="78" width="88" height="16" rx="8" fill="#d43d1d"/>${[80,92,104,116,128,140].map(x=>`<line x1="${x}" y1="80" x2="${x}" y2="92" stroke="#ff7a52" stroke-width="3"/>`).join("")}<g class="pom"><circle cx="110" cy="40" r="10" fill="#fff"/></g>` : "";
+
+  // Hár: drengur með stutt hár, stúlka með sítt hár og fléttur
+  const harBak = p.stulka && !f.hetta ? `<path d="M68 92 q-10 52 4 74 q38 10 76 0 q14-22 4-74z" fill="${harLitur}"/>` : "";
+  const flettur = p.stulka && !f.hetta ? `<g fill="${harLitur}"><path d="M70 120 q-14 18-8 46 q4 6 9 0 q-2-26 8-40z"/><path d="M150 120 q14 18 8 46 q-4 6-9 0 q2-26-8-40z"/></g><circle cx="66" cy="164" r="5" fill="#ff4f8b"/><circle cx="154" cy="164" r="5" fill="#ff4f8b"/>` : "";
+  const harFram = f.hufa||f.hetta ? "" : p.stulka
+    ? `<path d="M70 94 q-4-50 40-50 q44 0 40 50 q-8-18-22-22 q-8 10-18 8 q-12-2-18-8 q-14 6-22 22z" fill="${harLitur}"/>`
+    : `<path d="M70 92 q-4-46 40-48 q42 0 42 44 q-10-20-30-22 q-6 10-28 12 q-14 2-24 14z" fill="${harLitur}"/>`;
+  const augnhar = p.stulka ? `<g stroke="#24303a" stroke-width="2" stroke-linecap="round"><line x1="91" y1="91" x2="88" y2="88"/><line x1="129" y1="91" x2="132" y2="88"/></g>` : "";
+  const hufa = f.hufa ? `<path d="M68 86 q0-44 42-46 q42 2 42 46z" fill="${C.hufa}"/><rect x="66" y="78" width="88" height="16" rx="8" fill="${dekkri[C.hufa]||'#d43d1d'}"/>${[80,92,104,116,128,140].map(x=>`<line x1="${x}" y1="80" x2="${x}" y2="92" stroke="#fff" stroke-width="3" opacity=".35"/>`).join("")}<g class="pom"><circle cx="110" cy="40" r="10" fill="#fff"/></g>` : "";
   const trefill = f.trefill ? `<rect x="84" y="128" width="52" height="16" rx="8" fill="#ffd21f"/><g class="scarf-tail"><path d="M118 138 l${8+halla} 30 l-12 3 l-${4+halla*.3}-30z" fill="#ffd21f"/><path d="M${126+halla} 166 l-12 3" stroke="#ff5a36" stroke-width="3"/></g>` : "";
   const gleraugu = f.gleraugu ? `<rect x="86" y="88" width="20" height="13" rx="5" fill="#1d2430"/><rect x="114" y="88" width="20" height="13" rx="5" fill="#1d2430"/><line x1="106" y1="93" x2="114" y2="93" stroke="#1d2430" stroke-width="3"/>` : "";
   const kinnar = `<circle cx="88" cy="110" r="7" fill="#ff8a8a" opacity="${f.hufa||f.vettl?'.65':'.35'}"/><circle cx="132" cy="110" r="7" fill="#ff8a8a" opacity="${f.hufa||f.vettl?'.65':'.35'}"/>`;
-  return `<svg class="kidsvg" viewBox="0 0 220 312" role="img" aria-label="Barn klætt eftir veðri">
+
+  // Galdraþema: skikkja (fyrir aftan fötin svo fataráðin sjáist), sproti og stjörnuhattur
+  const stjarna = (x,y,s=1) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0-6 l1.8 4 4.2.4-3.2 2.8 1 4.2L0 3.2-3.8 5.4l1-4.2L-6-1.6l4.2-.4z" fill="#ffd21f"/>`;
+  const skikkja = p.galdur ? `<path d="M80 140 L44 294 Q110 308 176 294 L140 140 Z" fill="#4b2a9e"/><path d="M48 280 Q110 296 172 280 L176 294 Q110 308 44 294 Z" fill="#7d4fd8"/>${stjarna(58,250)}${stjarna(160,232,.8)}${stjarna(66,200,.7)}${stjarna(155,272,.9)}` : "";
+  const nala = p.galdur ? `<circle cx="110" cy="142" r="5" fill="#ffd21f" stroke="#d9a800" stroke-width="2"/>` : "";
+  const sproti = p.galdur ? `<line x1="152" y1="226" x2="180" y2="186" stroke="#6b3f1f" stroke-width="5" stroke-linecap="round"/><line x1="176" y1="192" x2="180" y2="186" stroke="#fff" stroke-width="5" stroke-linecap="round"/><g class="sparkle">${stjarna(184,180,1.4)}<circle cx="194" cy="172" r="2" fill="#fff"/><circle cx="176" cy="168" r="1.6" fill="#fff"/></g>` : "";
+  const galdraHattur = p.galdur && !f.hufa && !f.hetta ? `<path d="M68 80 C86 66 100 36 128 -6 C130 26 138 60 152 80 Z" fill="#4b2a9e"/><path d="M71 76 Q110 66 149 76 L150 82 Q110 72 70 82Z" fill="#ffd21f"/><ellipse cx="110" cy="82" rx="52" ry="9" fill="#5b36b8"/>${stjarna(112,40,.9)}${stjarna(122,14,.6)}` : "";
+
+  return `<svg class="kidsvg" viewBox="0 -14 220 326" role="img" aria-label="${p.stulka?'Stúlka':'Drengur'} klædd${p.stulka?'':'ur'} eftir veðri">
     <ellipse cx="110" cy="304" rx="58" ry="7" fill="#000" opacity=".2"/>
     <g class="lean" style="transform:rotate(${(-halla*.5).toFixed(1)}deg)"><g class="body">
+      ${skikkja}${harBak}
       ${fotlegg}${skor}
       <g>${armL}<circle cx="68" cy="222" r="9" fill="${handLitur}"/></g>
-      ${bolur}${ytriSmatridi}
-      <g class="wave">${armR}<circle cx="152" cy="222" r="9" fill="${handLitur}"/></g>
+      ${bolur}${ytriSmatridi}${nala}
+      <g class="wave">${armR}${sproti}<circle cx="152" cy="222" r="9" fill="${handLitur}"/></g>
       <rect x="102" y="124" width="16" height="16" rx="6" fill="var(--skin)"/>
       ${hetta}
       <circle cx="110" cy="96" r="40" fill="var(--skin)"/>
-      ${har}
-      <g class="eyes"><circle cx="96" cy="96" r="4.5" fill="#24303a"/><circle cx="124" cy="96" r="4.5" fill="#24303a"/></g>
+      ${harFram}${flettur}
+      <g class="eyes"><circle cx="96" cy="96" r="4.5" fill="#24303a"/><circle cx="124" cy="96" r="4.5" fill="#24303a"/>${augnhar}</g>
       ${gleraugu}${kinnar}
       <path d="M98 114 q12 10 24 0" fill="none" stroke="#7a3b2e" stroke-width="3.5" stroke-linecap="round"/>
-      ${hufa}${trefill}
+      ${hufa}${galdraHattur}${trefill}
     </g></g></svg>`;
 }
 
@@ -433,7 +464,8 @@ function effekt(n){
    Hangir niður í logni, stendur beint út í ~14 m/s, blaktir hraðar og
    meira í hviðum og vísar alltaf undan vindinum.
    ===================================================================== */
-const FANI = { v:0, g:0, att:270, hallaNu:80, rafi:null };
+const FANI = { v:0, g:0, att:270, hallaNu:80, rafi:null, raemur:null };
+const FANA_L = 170, FANA_H = 96;
 function teiknaFanastong(){
   $("flagRoot").innerHTML = `
     <ellipse cx="70" cy="252" rx="34" ry="6" fill="#000" opacity=".18"/>
@@ -441,32 +473,45 @@ function teiknaFanastong(){
     <rect x="66" y="22" width="3" height="232" rx="1.5" fill="#fff" opacity=".7"/>
     <circle cx="70" cy="18" r="8" fill="#ffd21f"/>
     <g id="flagCloth"><path id="flagPath" fill="var(--flag)" stroke="var(--flag-2)" stroke-width="2" stroke-linejoin="round"/>
+      <g id="flagImg"></g>
       <path id="flagShade" fill="var(--flag-2)" opacity=".55"/></g>`;
+  // Ef skólinn setur sína eigin fánamynd í safnið birtist hún á fánanum og blaktir með honum
+  if (!CONFIG.fanamynd) return;
+  const mynd = new Image();
+  mynd.onload = () => {
+    const ns = "http://www.w3.org/2000/svg", rot = $("flagImg"), raemur = [];
+    for (let x = 0; x < FANA_L; x += 10){
+      const g = document.createElementNS(ns, "g");
+      g.innerHTML = `<clipPath id="fr${x}"><rect x="${x}" y="-2" width="10.8" height="${FANA_H+4}"/></clipPath>
+        <image href="${CONFIG.fanamynd}" x="0" y="0" width="${FANA_L}" height="${FANA_H}" preserveAspectRatio="xMidYMid slice" clip-path="url(#fr${x})"/>`;
+      rot.appendChild(g); raemur.push({x, g});
+    }
+    FANI.raemur = raemur;
+    $("flagShade").setAttribute("opacity", ".22");
+  };
+  mynd.src = CONFIG.fanamynd;
 }
 function fanaRammi(tms){
   const t = tms/1000, v = FANI.v, g = FANI.g;
-  const L = 170, H = 96;
-  // Halli (gráður niður frá láréttu): 80° í logni → 0° við 14 m/s
-  const markHalli = 80 * (1 - Math.min(1, v/14));
+  const L = FANA_L, H = FANA_H;
+  const markHalli = 80 * (1 - Math.min(1, v/14));        // 80° niður í logni → lárétt við 14 m/s
   FANI.hallaNu += (markHalli - FANI.hallaNu) * 0.04;
   const amp = 2 + Math.min(v, 22) * 0.9 + Math.max(0, g - v) * 0.6;
-  const w = 2.2 + v * 0.42;
-  const k = 0.045;
+  const w = 2.2 + v * 0.42, k = 0.045;
   const hvida = Math.max(0, g - v) * 0.35 * Math.sin(t * 7.3) * Math.sin(t * 1.7);
-  const pts = []; const pbs = [];
+  const bylgja = (x, fasi=0) => (amp + hvida) * (x / L) * Math.sin(k*x - w*t + fasi);
+  const raemurMynd = !!FANI.raemur;
+  const pts = [], pbs = [];
   for (let x = 0; x <= L; x += 10){
-    const a = (amp + hvida) * (x / L);
-    pts.push([x, a * Math.sin(k*x - w*t)]);
-    pbs.push([x * (1 - 0.06*(x/L)), H + a * Math.sin(k*x - w*t + 0.5)]);
+    pts.push([x, bylgja(x)]);
+    pbs.push([raemurMynd ? x : x * (1 - 0.06*(x/L)), H + (raemurMynd ? bylgja(x) : bylgja(x, 0.5))]);
   }
-  const d = "M" + pts.map(p=>p.map(n=>n.toFixed(1)).join(" ")).join(" L") + " L" + pbs.reverse().map(p=>p.map(n=>n.toFixed(1)).join(" ")).join(" L") + "Z";
-  // Skuggarönd í öldudölunum
-  const sh = []; for (let x=0;x<=L;x+=10){ const a=(amp+hvida)*(x/L); const s=Math.sin(k*x - w*t); sh.push([x, H*0.35 + a*s + (s>0?8:-2)]); }
-  const shd = "M" + sh.map(p=>p.map(n=>n.toFixed(1)).join(" ")).join(" L") + ` L${L} ${H*0.6} L0 ${H*0.6}Z`;
-  $("flagPath").setAttribute("d", d);
-  $("flagShade").setAttribute("d", shd);
-  // Fáninn vísar undan vindinum: austlæg átt (0–180°) blæs til vesturs → til vinstri á skjánum
-  const vinstri = FANI.att > 0 && FANI.att < 180 && v >= 0.3;
+  const fmt = a => a.map(p=>p.map(n=>n.toFixed(1)).join(" ")).join(" L");
+  $("flagPath").setAttribute("d", "M" + fmt(pts) + " L" + fmt(pbs.reverse()) + "Z");
+  const sh = []; for (let x=0;x<=L;x+=10){ const s=Math.sin(k*x - w*t); sh.push([x, H*0.35 + bylgja(x) + (s>0?8:-2)]); }
+  $("flagShade").setAttribute("d", "M" + fmt(sh) + ` L${L} ${H*0.6} L0 ${H*0.6}Z`);
+  if (raemurMynd) FANI.raemur.forEach(({x, g}) => g.setAttribute("transform", `translate(0 ${bylgja(x+5).toFixed(1)})`));
+  const vinstri = FANI.att > 0 && FANI.att < 180 && v >= 0.3;   // austlæg átt blæs til vesturs
   const spegla = vinstri ? "translate(140 0) scale(-1 1)" : "";
   $("flagCloth").setAttribute("transform", `${spegla} translate(74 26) rotate(${FANI.hallaNu.toFixed(1)})`);
   FANI.rafi = requestAnimationFrame(fanaRammi);
@@ -618,11 +663,14 @@ function birta(){
 
   /* Gaukur */
   const {f, lina} = klaednadur({feels:kaldast, wind:v, rainSoon, snowSoon, sunny});
-  $("stage").innerHTML = teiknaGauk(f, v);
+  const dagNr = Math.floor(dagsFra(idag).getTime() / 864e5);
+  const barn = CONFIG.born[dagNr % CONFIG.born.length];
+  const galdur = !!CONFIG.galdrathema && idag >= CONFIG.galdrathema.fra && idag <= CONFIG.galdrathema.til;
+  $("stage").innerHTML = teiknaGauk(f, v, { stulka: barn.stulka, galdur });
   document.documentElement.style.setProperty("--flut", `${Math.max(.4, 1.6 - v*.07).toFixed(2)}s`);
   document.documentElement.style.setProperty("--flut-deg", `${Math.min(22, 6 + v).toFixed(0)}deg`);
   $("wearLine").textContent = lina;
-  $("bubble").textContent = `Hæ, ég heiti ${CONFIG.nafn_barns}! ${LYSING[c.weather_code] ?? ""} og ${r0(t)} stiga hiti. Svona klæði ég mig úti núna:`;
+  $("bubble").textContent = `Hæ, ég heiti ${barn.nafn}${galdur ? " og er í galdraskóla" : ""}! ${LYSING[c.weather_code] ?? ""} og ${r0(t)} stiga hiti. Svona klæði ég mig úti núna:`;
   effekt({rainNow, snowNow, wind:v, sunny, dagur});
 
   /* Vindur og Grænfáni */
