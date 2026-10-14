@@ -41,8 +41,8 @@ h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:1.65rem;line-
   grid-template-rows:auto minmax(0,1.1fr) minmax(0,1fr) auto auto;
   grid-template-areas:
     "head head head head head"
-    "kid  wind wind sun  moon"
-    "kid  temp lunch lunch rain"
+    "kid  temp wind wind rain"
+    "kid  lunch dagar sun moon"
     "hours hours hours hours baro"
     "fact fact fact fact fact";
   padding-block:.85rem;
@@ -131,13 +131,25 @@ header .t span{color:var(--sun)}
 
 /* ---- Hádegismatur ---- */
 .lunch{grid-area:lunch;background:linear-gradient(160deg,#ff8fc1 0%,#ff5fa2 45%,#e6397f 100%)}
-.lunch .main{flex:1;display:flex;align-items:center;gap:1.3rem;min-height:0}
-.lunch svg{width:7rem;height:7rem;flex:none}
+.lunch .main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.3rem;min-height:0}
+.lunch svg{width:3rem;height:3rem;flex:none;position:absolute;right:.9rem;top:.75rem}
+.lunch h2{padding-right:3rem;font-size:1.5rem}
 .lunch .dagur{font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.9}
-.lunch .rettur{font-family:var(--f-display);font-size:2.4rem;font-weight:800;line-height:1.05;text-wrap:balance}
-.lunch .rettur.litill{font-size:1.9rem}
-.lunch .naest{background:rgba(0,0,0,.16);border-radius:14px;padding:.45rem .8rem;font-size:1.05rem}
+.lunch .rettur{font-family:var(--f-display);font-size:1.9rem;font-weight:800;line-height:1.05;text-wrap:balance}
+.lunch .rettur.litill{font-size:1.5rem}
+.lunch .naest{background:rgba(0,0,0,.16);border-radius:14px;padding:.4rem .7rem;font-size:.95rem;line-height:1.25}
 .lunch .naest b{font-weight:700}
+
+/* ---- Á döfinni ---- */
+.dagar{grid-area:dagar;gap:.35rem;background:linear-gradient(160deg,#c6f56b 0%,#8bd64a 50%,#5fb32c 100%);color:#183300}
+.dagar .hvenaer{display:inline-flex;align-self:flex-start;background:#183300;color:#c6f56b;border-radius:999px;padding:.1rem .8rem;font-weight:700;font-size:.95rem}
+.dagar .hvenaer.idag{background:#fff;color:#2d6a00;animation:blodra 1.6s ease-in-out infinite}
+.dagar .nafn{font-family:var(--f-display);font-size:1.65rem;font-weight:800;line-height:1.05;text-wrap:balance}
+.dagar .frod{font-size:.98rem;line-height:1.28;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;flex:none}
+.dagar ul{list-style:none;margin:auto 0 0;padding:.45rem 0 0;border-top:2px solid rgba(24,51,0,.18);display:flex;flex-direction:column;gap:.2rem}
+.dagar ul:empty{display:none}
+.dagar li{display:flex;justify-content:space-between;gap:.6rem;font-size:.95rem;font-weight:700}
+.dagar li span:last-child{opacity:.75;white-space:nowrap}
 
 /* ---- Tunglið ---- */
 .moon{grid-area:moon;background:linear-gradient(170deg,#3b3f9e 0%,#262a78 55%,#1a1c55 100%);align-items:center;text-align:center}
@@ -196,7 +208,7 @@ header .t span{color:var(--sun)}
   :root{font-size:15px}
   body{overflow:auto}
   .screen{height:auto;grid-template-columns:1fr 1fr;grid-template-rows:auto;
-    grid-template-areas:"head head" "kid kid" "wind wind" "lunch lunch" "temp rain" "sun moon" "hours hours" "baro baro" "fact fact";
+    grid-template-areas:"head head" "kid kid" "wind wind" "temp rain" "dagar dagar" "lunch lunch" "sun moon" "hours hours" "baro baro" "fact fact";
     padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px))}
   .kid{min-height:30rem}
   .card{min-height:14rem}
@@ -265,7 +277,7 @@ header .t span{color:var(--sun)}
   </section>
 
   <section class="card lunch" aria-label="Hádegismatur">
-    <h2 id="mTitill">Hádegismatur í dag</h2>
+    <h2 id="mTitill">Hádegismatur</h2>
     <div class="main">
       <svg viewBox="0 0 120 120" aria-hidden="true">
         <circle cx="60" cy="62" r="46" fill="#fff"/><circle cx="60" cy="62" r="33" fill="none" stroke="#ffd0e4" stroke-width="4"/>
@@ -280,6 +292,14 @@ header .t span{color:var(--sun)}
       </div>
     </div>
     <div class="naest" id="mNaest" hidden></div>
+  </section>
+
+  <section class="card dagar" aria-label="Á döfinni">
+    <h2 id="dTitill">Á döfinni</h2>
+    <span class="hvenaer" id="dHvenaer" hidden></span>
+    <div class="nafn" id="dNafn">&nbsp;</div>
+    <div class="frod" id="dFrod"></div>
+    <ul id="dListi"></ul>
   </section>
 
   <section class="card rain" aria-label="Úrkoma í dag">
@@ -341,6 +361,9 @@ const CONFIG = {
   // Matseðill: CSV-skrá í sömu möppu (dags,matur) eða slóð á Google-töflu
   // sem gefin er út sem CSV (Skrá → Deila → Gefa út á vefnum → CSV)
   matsedill: "matsedill.csv",
+
+  // Sérstakir dagar: dagar.csv í sömu möppu (fra,til,heiti,frodleikur)
+  dagar: "dagar.csv",
 
   // Stundaskrá: barnið segir frá þessu í talblöðrunni (aðeins virka daga).
   // „fyrir" birtist síðustu 5 mínúturnar áður ({min} = mínútur sem eru eftir),
@@ -569,20 +592,20 @@ function fanaRammi(tms){
 
   // Hviður: af og til kemur vindhnykkur sem lyftir fánanum og eykur blakt
   const hviduMunur = g - v;
-  if (Math.random() < dt * (0.15 + hviduMunur * 0.05)) FANI.hnykkur = 1;
-  FANI.hnykkur = Math.max(0, FANI.hnykkur - dt * 0.9);
+  if (Math.random() < dt * (0.08 + hviduMunur * 0.025)) FANI.hnykkur = 1;
+  FANI.hnykkur = Math.max(0, FANI.hnykkur - dt * 0.5);
   const virkur = v + hviduMunur * FANI.hnykkur * 0.8 + Math.sin(t*0.7) * Math.min(1.5, v*0.15);
 
   // Halli: 55° niður í logni (fáninn hangir með stönginni) → lárétt við 12 m/s
   const markHalli = 55 * (1 - Math.min(1, virkur/12));
-  FANI.hallaNu += (markHalli - FANI.hallaNu) * Math.min(1, dt * 2.2);
+  FANI.hallaNu += (markHalli - FANI.hallaNu) * Math.min(1, dt * 1.2);
   const lafir = Math.max(0, 1 - virkur/10);                 // sig í litlum vindi
 
   const amp = 3 + Math.min(virkur, 22) * 1.15;
-  const w = 2.4 + virkur * 0.5, k = 0.05;
+  const w = 1.5 + virkur * 0.28, k = 0.05;
   const ry = (x, fasi) => {
     const s = x / L;                                       // blakt eykst út eftir fánanum
-    return amp * s * (Math.sin(k*x - w*t + fasi) + 0.35 * Math.sin(2.3*k*x - 1.9*w*t + fasi*1.7))
+    return amp * s * (Math.sin(k*x - w*t + fasi) + 0.3 * Math.sin(2.3*k*x - 1.5*w*t + fasi*1.7))
          + lafir * 14 * s * s;
   };
   // Fánalínan (festingin) er alltaf lóðrétt við stöngina; lengdin sígur niður í litlum vindi
@@ -625,7 +648,7 @@ function fanaRammi(tms){
   $("flagCloth").setAttribute("transform", "translate(74 26)");
 
   // Fánalínan flöktir við stöngina
-  const lx = 78, lo = (3 + virkur*0.5) * Math.sin(t*w*0.8);
+  const lx = 78, lo = (3 + virkur*0.5) * Math.sin(t*w*0.6);
   $("flagLina").setAttribute("d", `M${lx} 26 Q${(lx + lo).toFixed(1)} 140 ${lx} 238`);
 
   // Laufblöð fjúka framhjá – fleiri og hraðari eftir því sem hvessir
@@ -633,9 +656,9 @@ function fanaRammi(tms){
   const att = 1;                       // speglunin sér um stefnuna
   FANI.lauf.forEach((l, i) => {
     if (i >= fjoldi){ l.el.setAttribute("opacity", "0"); return; }
-    l.x += att * (25 + virkur * 16) * l.s * dt;
+    l.x += att * (16 + virkur * 9) * l.s * dt;
     l.y += Math.sin(t * 2 + l.fasi) * 18 * dt + (6 - virkur*0.25) * dt;
-    l.snu += (90 + virkur * 25) * dt;
+    l.snu += (50 + virkur * 14) * dt;
     if (l.x > 320 || l.x < -20 || l.y > 250 || l.y < 10){ l.x = att > 0 ? -15 : 315; l.y = 25 + Math.random()*190; l.s = 0.6 + Math.random()*0.7; }
     l.el.setAttribute("opacity", "0.9");
     l.el.setAttribute("transform", `translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.snu.toFixed(0)}) scale(${l.s.toFixed(2)})`);
@@ -764,8 +787,8 @@ function birtaMat(){
   const dIdag = dagsFra(idag), helgi = dIdag.getUTCDay()===0 || dIdag.getUTCDay()===6;
   const synaDag = eftirMat || helgi ? naestiSkoladagur(idag) : idag;
   const dd = dagsFra(synaDag);
-  $("mTitill").textContent = synaDag === idag ? "Hádegismatur í dag" : "Næsti hádegismatur";
-  $("mDagur").textContent = `${DAGAR[dd.getUTCDay()]} ${dd.getUTCDate()}. ${["janúar","febrúar","mars","apríl","maí","júní","júlí","ágúst","september","október","nóvember","desember"][dd.getUTCMonth()]}`;
+  $("mTitill").textContent = "Hádegismatur";
+  $("mDagur").textContent = `${synaDag === idag ? "Í dag" : DAGAR[dd.getUTCDay()].replace(/^./, c => c.toUpperCase())} · ${stuttDags(synaDag)}`;
   const el = $("mRettur");
   if (!matsedill){ el.textContent = matVilla ? "Matseðillinn fannst ekki" : "Sæki matseðil…"; el.classList.add("litill"); $("mNaest").hidden = true; return; }
   const rettur = matsedill[synaDag];
@@ -903,7 +926,8 @@ function birta(){
   document.documentElement.style.setProperty("--flut", `${Math.max(.4, 1.6 - v*.07).toFixed(2)}s`);
   document.documentElement.style.setProperty("--flut-deg", `${Math.min(22, 6 + v).toFixed(0)}deg`);
   $("wearLine").textContent = lina;
-  vedurBlodra = `Hæ, ég heiti ${barn.nafn}${galdur ? " og er í galdraskóla" : ""}! ${LYSING[c.weather_code] ?? ""} og ${r0(t)} stiga hiti. Svona klæði ég mig úti núna:`;
+  const serdagur = dagurIdag();
+  vedurBlodra = `Hæ, ég heiti ${barn.nafn}${galdur ? " og er í galdraskóla" : ""}! ${serdagur ? `Í dag er ${serdagur.heiti.charAt(0).toLowerCase() + serdagur.heiti.slice(1)}. ` : ""}${LYSING[c.weather_code] ?? ""} og ${r0(t)} stiga hiti. Svona klæði ég mig úti núna:`;
   birtaBlodru();
   effekt({rainNow, snowNow, wind:v, sunny, dagur});
 
@@ -965,6 +989,59 @@ function birta(){
     return `<div class="hr${cur?' cur':''}"><span class="t">${cur?'Núna':k+':00'}</span>${ikon(H.weather_code[i], H.is_day[i])}<span class="tp">${deg(H.temperature_2m[i])}</span><span class="w">${r0(H.wind_speed_10m[i])} m/s</span></div>`; }).join("");
 }
 
+/* =====================================================================
+   Á DÖFINNI – sérstakir dagar úr dagar.csv
+   ===================================================================== */
+let serdagar = null;
+async function saekjaDaga(){
+  if (!CONFIG.dagar) return;
+  try {
+    const r = await fetch(CONFIG.dagar + "?t=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) throw new Error("dagar.csv fannst ekki (" + r.status + ")");
+    const artal = nuna().slice(0,4), listi = [];
+    lesaCsv(await r.text()).forEach(row => {
+      if (!row[0] || row[0].trim().startsWith("#")) return;
+      const fra = lesaDags(row[0], artal); if (!fra || !(row[2]||"").trim()) return;
+      const til = lesaDags(row[1], artal) || fra;
+      listi.push({ fra, til: til < fra ? fra : til, heiti: row[2].trim(), frod: (row.slice(3).join(",") || "").trim() });
+    });
+    serdagar = listi.sort((a,b) => a.fra.localeCompare(b.fra));
+  } catch(e){ console.warn("Sérstakir dagar:", e); serdagar = serdagar || []; }
+  birtaDaga();
+  if (spa) try { birta(); } catch(e){ console.error(e); }
+}
+const dagaMunur = (a, b) => Math.round((dagsFra(b) - dagsFra(a)) / 864e5);
+const MAN_STUTT = ["jan.","feb.","mars","apr.","maí","júní","júlí","ág.","sept.","okt.","nóv.","des."];
+const stuttDags = iso => { const d = dagsFra(iso); return `${d.getUTCDate()}. ${MAN_STUTT[d.getUTCMonth()]}`; };
+function dagurIdag(){
+  if (!serdagar) return null;
+  const idag = nuna().slice(0,10);
+  return serdagar.find(d => d.fra <= idag && d.til >= idag) || null;
+}
+function birtaDaga(){
+  if (!serdagar) return;
+  const idag = nuna().slice(0,10);
+  const nu = serdagar.filter(d => d.fra <= idag && d.til >= idag);
+  const kom = serdagar.filter(d => d.fra > idag);
+  const adal = nu[0] || kom[0];
+  const h = $("dHvenaer");
+  if (!adal){ $("dNafn").textContent = "Ekkert á dagskrá"; $("dFrod").textContent = "Bætið dögum við í dagar.csv"; h.hidden = true; $("dListi").innerHTML = ""; return; }
+  if (nu.includes(adal)){
+    h.textContent = adal.til > adal.fra ? `Í dag · til ${stuttDags(adal.til)}` : "Í dag!"; h.classList.add("idag");
+  } else {
+    const n = dagaMunur(idag, adal.fra);
+    h.textContent = n === 1 ? "Á morgun" : `Eftir ${n} daga · ${stuttDags(adal.fra)}`; h.classList.remove("idag");
+  }
+  h.hidden = false;
+  $("dNafn").textContent = adal.heiti;
+  $("dFrod").textContent = adal.frod;
+  // Langur fróðleikur eða langt heiti fær allt plássið; annars sýnum við næsta viðburð líka
+  const plass = adal.frod.length + (adal.heiti.length > 18 ? 35 : 0) <= 130;
+  const restin = plass ? [...nu.slice(1), ...kom.filter(d => d !== adal)].slice(0, 1) : [];
+  $("dListi").innerHTML = "";
+  restin.forEach(d => { const li = document.createElement("li"); const a = document.createElement("span"); a.textContent = d.heiti; const b = document.createElement("span"); b.textContent = d.fra <= idag ? "í dag" : stuttDags(d.fra); li.append(a, b); $("dListi").append(li); });
+}
+
 /* ---- Stundaskrá í talblöðrunni ---- */
 const MIN_ORD = ["", "ein mínúta", "tvær mínútur", "þrjár mínútur", "fjórar mínútur", "fimm mínútur"];
 const kl2min = s => Number(s.slice(0,2))*60 + Number(s.slice(3,5));
@@ -1009,6 +1086,7 @@ naestaStadreynd(); setInterval(naestaStadreynd, 25000);
 uppfaera(); setInterval(uppfaera, CONFIG.uppfaera_min*60000);
 birtaTungl(); setInterval(birtaTungl, 30*60000);
 saekjaMatsedil(); setInterval(saekjaMatsedil, 30*60000);
+saekjaDaga(); setInterval(saekjaDaga, 30*60000);
 setInterval(()=>{ if (nuna().slice(11,16)==="03:30") location.reload(); }, 60000);
 (async()=>{ try{ await navigator.wakeLock?.request("screen"); }catch(e){} })();
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") navigator.wakeLock?.request("screen").catch(()=>{}); });
