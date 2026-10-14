@@ -103,7 +103,7 @@ header .t span{color:var(--sun)}
 /* ---- Vindur + Grænfáni ---- */
 .wind{grid-area:wind;background:linear-gradient(160deg,#16c2a0 0%,var(--wind) 45%,var(--wind-2) 100%)}
 .wind .row{flex:1;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:.8rem;align-items:center;min-height:0}
-.wind svg.flag{width:100%;height:100%;max-height:16rem;min-height:0}
+.wind svg.flag{width:100%;height:100%;max-height:16rem;min-height:0;overflow:visible}
 .wspeed{display:flex;align-items:baseline;gap:.4rem}
 .wspeed .big{font-size:4.8rem;font-weight:800;line-height:.85}
 .wspeed small{font-size:1.5rem;font-weight:700;color:var(--soft)}
@@ -525,56 +525,122 @@ function effekt(n){
    Hangir niður í logni, stendur beint út í ~14 m/s, blaktir hraðar og
    meira í hviðum og vísar alltaf undan vindinum.
    ===================================================================== */
-const FANI = { v:0, g:0, att:270, hallaNu:80, rafi:null, raemur:null };
-const FANA_L = 170, FANA_H = 96;
+const FANI = { v:0, g:0, att:270, hallaNu:55, rafi:null, raemur:null, sidast:0, lauf:[], hnykkur:0 };
+const FANA_L = 170, FANA_H = 96, FANA_SKREF = 5;
+const FANA_N = Math.round(FANA_L / FANA_SKREF);
 function teiknaFanastong(){
+  const fellingar = Array.from({length: FANA_N}, () => `<polygon/>`).join("");
+  const lauf = Array.from({length: 12}, (_, i) =>
+    `<g class="lauf" opacity="0"><path d="M0 -5 C6 -5 9 0 0 6 C-9 0 -6 -5 0 -5Z" fill="${["#ffd21f","#ffa400","#c9f25c","#ffffff"][i%4]}"/><line x1="0" y1="-4" x2="0" y2="5" stroke="rgba(0,0,0,.25)" stroke-width="1"/></g>`).join("");
   $("flagRoot").innerHTML = `
+    <g id="laufBak">${lauf}</g>
     <ellipse cx="70" cy="252" rx="34" ry="6" fill="#000" opacity=".18"/>
-    <rect x="66" y="22" width="8" height="232" rx="4" fill="#eef4f2"/>
-    <rect x="66" y="22" width="3" height="232" rx="1.5" fill="#fff" opacity=".7"/>
-    <circle cx="70" cy="18" r="8" fill="#ffd21f"/>
-    <g id="flagCloth"><path id="flagPath" fill="var(--flag)" stroke="var(--flag-2)" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="58" y="240" width="24" height="12" rx="4" fill="#d5e2df"/>
+    <rect x="66" y="22" width="8" height="226" rx="4" fill="#eef4f2"/>
+    <rect x="66" y="22" width="3" height="226" rx="1.5" fill="#fff" opacity=".8"/>
+    <path id="flagLina" fill="none" stroke="#fff" stroke-width="1.6" opacity=".7"/>
+    <g id="flagCloth">
+      <path id="flagPath" fill="var(--flag)"/>
       <g id="flagImg"></g>
-      <path id="flagShade" fill="var(--flag-2)" opacity=".55"/></g>`;
+      <g id="flagFell">${fellingar}</g>
+      <path id="flagEdge" fill="none" stroke="var(--flag-2)" stroke-width="2" stroke-linejoin="round"/>
+    </g>
+    <circle cx="70" cy="17" r="8" fill="#ffd21f"/><circle cx="67.5" cy="14.5" r="2.5" fill="#fff" opacity=".8"/>`;
+  FANI.lauf = [...document.querySelectorAll("#laufBak .lauf")].map((el, i) => ({ el, x: Math.random()*300, y: 30 + Math.random()*190, s: 0.6 + Math.random()*0.7, fasi: Math.random()*6, snu: Math.random()*360 }));
   // Ef skólinn setur sína eigin fánamynd í safnið birtist hún á fánanum og blaktir með honum
   if (!CONFIG.fanamynd) return;
   const mynd = new Image();
   mynd.onload = () => {
     const ns = "http://www.w3.org/2000/svg", rot = $("flagImg"), raemur = [];
-    for (let x = 0; x < FANA_L; x += 10){
+    for (let x = 0; x < FANA_L; x += FANA_SKREF){
       const g = document.createElementNS(ns, "g");
-      g.innerHTML = `<clipPath id="fr${x}"><rect x="${x}" y="-2" width="10.8" height="${FANA_H+4}"/></clipPath>
+      g.innerHTML = `<clipPath id="fr${x}"><rect x="${x}" y="-2" width="${FANA_SKREF+0.8}" height="${FANA_H+4}"/></clipPath>
         <image href="${CONFIG.fanamynd}" x="0" y="0" width="${FANA_L}" height="${FANA_H}" preserveAspectRatio="xMidYMid slice" clip-path="url(#fr${x})"/>`;
       rot.appendChild(g); raemur.push({x, g});
     }
     FANI.raemur = raemur;
-    $("flagShade").setAttribute("opacity", ".22");
   };
   mynd.src = CONFIG.fanamynd;
 }
+
 function fanaRammi(tms){
-  const t = tms/1000, v = FANI.v, g = FANI.g;
-  const L = FANA_L, H = FANA_H;
-  const markHalli = 80 * (1 - Math.min(1, v/14));        // 80° niður í logni → lárétt við 14 m/s
-  FANI.hallaNu += (markHalli - FANI.hallaNu) * 0.04;
-  const amp = 2 + Math.min(v, 22) * 0.9 + Math.max(0, g - v) * 0.6;
-  const w = 2.2 + v * 0.42, k = 0.045;
-  const hvida = Math.max(0, g - v) * 0.35 * Math.sin(t * 7.3) * Math.sin(t * 1.7);
-  const bylgja = (x, fasi=0) => (amp + hvida) * (x / L) * Math.sin(k*x - w*t + fasi);
-  const raemurMynd = !!FANI.raemur;
-  const pts = [], pbs = [];
-  for (let x = 0; x <= L; x += 10){
-    pts.push([x, bylgja(x)]);
-    pbs.push([raemurMynd ? x : x * (1 - 0.06*(x/L)), H + (raemurMynd ? bylgja(x) : bylgja(x, 0.5))]);
+  const t = tms/1000, dt = Math.min(0.05, FANI.sidast ? t - FANI.sidast : 0.016); FANI.sidast = t;
+  const v = FANI.v, g = Math.max(FANI.g, v), L = FANA_L, H = FANA_H;
+
+  // Hviður: af og til kemur vindhnykkur sem lyftir fánanum og eykur blakt
+  const hviduMunur = g - v;
+  if (Math.random() < dt * (0.15 + hviduMunur * 0.05)) FANI.hnykkur = 1;
+  FANI.hnykkur = Math.max(0, FANI.hnykkur - dt * 0.9);
+  const virkur = v + hviduMunur * FANI.hnykkur * 0.8 + Math.sin(t*0.7) * Math.min(1.5, v*0.15);
+
+  // Halli: 55° niður í logni (fáninn hangir með stönginni) → lárétt við 12 m/s
+  const markHalli = 55 * (1 - Math.min(1, virkur/12));
+  FANI.hallaNu += (markHalli - FANI.hallaNu) * Math.min(1, dt * 2.2);
+  const lafir = Math.max(0, 1 - virkur/10);                 // sig í litlum vindi
+
+  const amp = 3 + Math.min(virkur, 22) * 1.15;
+  const w = 2.4 + virkur * 0.5, k = 0.05;
+  const ry = (x, fasi) => {
+    const s = x / L;                                       // blakt eykst út eftir fánanum
+    return amp * s * (Math.sin(k*x - w*t + fasi) + 0.35 * Math.sin(2.3*k*x - 1.9*w*t + fasi*1.7))
+         + lafir * 14 * s * s;
+  };
+  // Fánalínan (festingin) er alltaf lóðrétt við stöngina; lengdin sígur niður í litlum vindi
+  const al = FANI.hallaNu * Math.PI / 180, ca = Math.cos(al), sa = Math.sin(al);
+  const mynd = !!FANI.raemur;
+  const top = [], bot = [];
+  for (let i = 0; i <= FANA_N; i++){
+    const x = i * FANA_SKREF, s = x / L;
+    const thjapp = mynd ? 1 : 1 - 0.09 * s * (0.6 + 0.4*Math.sin(k*x - w*t));   // efnið þjappast í fellingum
+    const bx = x * thjapp * ca, by = x * sa;
+    top.push([bx, by + ry(x, 0)]);
+    bot.push([bx * (mynd ? 1 : 1 - 0.04*s), by + H + ry(x, mynd ? 0 : 0.55)]);
   }
-  const fmt = a => a.map(p=>p.map(n=>n.toFixed(1)).join(" ")).join(" L");
-  $("flagPath").setAttribute("d", "M" + fmt(pts) + " L" + fmt(pbs.reverse()) + "Z");
-  const sh = []; for (let x=0;x<=L;x+=10){ const s=Math.sin(k*x - w*t); sh.push([x, H*0.35 + bylgja(x) + (s>0?8:-2)]); }
-  $("flagShade").setAttribute("d", "M" + fmt(sh) + ` L${L} ${H*0.6} L0 ${H*0.6}Z`);
-  if (raemurMynd) FANI.raemur.forEach(({x, g}) => g.setAttribute("transform", `translate(0 ${bylgja(x+5).toFixed(1)})`));
-  const vinstri = FANI.att > 0 && FANI.att < 180 && v >= 0.3;   // austlæg átt blæs til vesturs
-  const spegla = vinstri ? "translate(140 0) scale(-1 1)" : "";
-  $("flagCloth").setAttribute("transform", `${spegla} translate(74 26) rotate(${FANI.hallaNu.toFixed(1)})`);
+  const fmt = a => a.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+  const utlina = "M" + fmt(top) + " L" + fmt([...bot].reverse()) + "Z";
+  $("flagPath").setAttribute("d", utlina);
+  $("flagEdge").setAttribute("d", utlina);
+
+  // Birta og skuggi eftir halla efnisins – gefur fellingar eins og í alvöru efni
+  const fell = $("flagFell").children;
+  for (let i = 0; i < FANA_N; i++){
+    const halli = (top[i+1][1] - top[i][1]) / FANA_SKREF + (bot[i+1][1] - bot[i][1]) / FANA_SKREF;
+    const o = Math.max(-0.5, Math.min(0.5, halli * 0.9));
+    const pl = fell[i];
+    pl.setAttribute("points", `${top[i][0].toFixed(1)},${top[i][1].toFixed(1)} ${top[i+1][0].toFixed(1)},${top[i+1][1].toFixed(1)} ${bot[i+1][0].toFixed(1)},${bot[i+1][1].toFixed(1)} ${bot[i][0].toFixed(1)},${bot[i][1].toFixed(1)}`);
+    pl.setAttribute("fill", o > 0 ? "#ffffff" : "#0b4d1a");
+    pl.setAttribute("fill-opacity", (Math.abs(o) * (FANI.raemur ? 0.55 : 0.75)).toFixed(3));
+  }
+  if (mynd) FANI.raemur.forEach(({x, g}) => {
+    // Hver ræma: sama halli og fáninn (skekking) + bylgjan í miðri ræmunni
+    // Bylgjan línuleguð yfir ræmuna (gildi + halli) svo myndin brotni ekki í tröppur
+    const xc = x + FANA_SKREF/2, w0 = ry(xc, 0), w1 = (ry(xc + 1, 0) - ry(xc - 1, 0)) / 2;
+    g.setAttribute("transform", `matrix(${ca.toFixed(4)} ${(sa + w1).toFixed(4)} 0 1 0 ${(w0 - w1*xc).toFixed(2)})`);
+  });
+
+  // Fáninn vísar undan vindinum: austlæg átt blæs til vesturs → til vinstri
+  // Í austlægri átt speglast stöngin og fáninn allur, svo fáninn hafi pláss til vinstri
+  const vinstri = FANI.att > 0 && FANI.att < 180 && v >= 0.3;
+  $("flagRoot").setAttribute("transform", vinstri ? "translate(300 0) scale(-1 1)" : "");
+  $("flagCloth").setAttribute("transform", "translate(74 26)");
+
+  // Fánalínan flöktir við stöngina
+  const lx = 78, lo = (3 + virkur*0.5) * Math.sin(t*w*0.8);
+  $("flagLina").setAttribute("d", `M${lx} 26 Q${(lx + lo).toFixed(1)} 140 ${lx} 238`);
+
+  // Laufblöð fjúka framhjá – fleiri og hraðari eftir því sem hvessir
+  const fjoldi = v < 1 ? 0 : Math.min(FANI.lauf.length, Math.round(v / 1.4));
+  const att = 1;                       // speglunin sér um stefnuna
+  FANI.lauf.forEach((l, i) => {
+    if (i >= fjoldi){ l.el.setAttribute("opacity", "0"); return; }
+    l.x += att * (25 + virkur * 16) * l.s * dt;
+    l.y += Math.sin(t * 2 + l.fasi) * 18 * dt + (6 - virkur*0.25) * dt;
+    l.snu += (90 + virkur * 25) * dt;
+    if (l.x > 320 || l.x < -20 || l.y > 250 || l.y < 10){ l.x = att > 0 ? -15 : 315; l.y = 25 + Math.random()*190; l.s = 0.6 + Math.random()*0.7; }
+    l.el.setAttribute("opacity", "0.9");
+    l.el.setAttribute("transform", `translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.snu.toFixed(0)}) scale(${l.s.toFixed(2)})`);
+  });
+
   FANI.rafi = requestAnimationFrame(fanaRammi);
 }
 
