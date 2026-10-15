@@ -72,7 +72,7 @@ header .t span{color:var(--sun)}
 .stage.hopp svg.kidsvg{animation:hopp .9s ease-in-out infinite}
 @keyframes hopp{0%,100%{transform:translateY(0)}40%{transform:translateY(-1.6rem)}60%{transform:translateY(-1.6rem)}}
 .bubble::after{content:"";position:absolute;left:50%;bottom:-.7rem;border:.7rem solid transparent;border-bottom:0;border-top-color:#fff;transform:translateX(-50%)}
-.stage{position:relative;flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;z-index:1}
+.stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;z-index:1}
 .stage svg.kidsvg{height:100%;max-height:32rem;width:auto;max-width:100%}
 .wear-line{font-family:var(--f-display);font-weight:800;font-size:2.05rem;line-height:1.05;text-align:center;text-wrap:balance;position:relative;z-index:2;text-shadow:0 .15rem 0 rgba(0,0,0,.2)}
 .fx{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
@@ -172,7 +172,8 @@ header .t span{color:var(--sun)}
 /* ---- Regnglas ---- */
 .rain{grid-area:rain;background:linear-gradient(160deg,#6cc8ff 0%,var(--rain) 45%,var(--rain-2) 100%);align-items:center;text-align:center}
 .rain h2{align-self:flex-start}
-.rain svg{flex:1;min-height:0;max-height:9.5rem;width:auto}
+.rain svg{flex:1;min-height:0;max-height:10rem;width:auto;margin-top:auto}
+.rain .s{margin-bottom:auto}
 .rain .v{font-family:var(--f-display);font-size:2.6rem;font-weight:800;line-height:1}
 .rain .v small{font-size:.5em;color:var(--soft)}
 .rain .s{font-size:1.1rem;font-weight:700}
@@ -304,7 +305,7 @@ header .t span{color:var(--sun)}
 
   <section class="card rain" aria-label="Úrkoma í dag">
     <h2>Regnglasið</h2>
-    <svg id="glass" viewBox="0 0 120 150" aria-hidden="true"></svg>
+    <svg id="glass" viewBox="-6 6 126 136" aria-hidden="true"></svg>
     <div class="v num" id="rV">– <small>mm í dag</small></div>
     <div class="s" id="rS">&nbsp;</div>
   </section>
@@ -512,7 +513,9 @@ function teiknaGauk(f, vindur, p = {}){
   const sproti = p.galdur ? `<line x1="152" y1="226" x2="180" y2="186" stroke="#6b3f1f" stroke-width="5" stroke-linecap="round"/><line x1="176" y1="192" x2="180" y2="186" stroke="#fff" stroke-width="5" stroke-linecap="round"/><g class="sparkle">${stjarna(184,180,1.4)}<circle cx="194" cy="172" r="2" fill="#fff"/><circle cx="176" cy="168" r="1.6" fill="#fff"/></g>` : "";
   const galdraHattur = p.galdur && !f.hufa && !f.hetta ? `<path d="M68 80 C86 66 100 36 128 -6 C130 26 138 60 152 80 Z" fill="#4b2a9e"/><path d="M71 76 Q110 66 149 76 L150 82 Q110 72 70 82Z" fill="#ffd21f"/><ellipse cx="110" cy="82" rx="52" ry="9" fill="#5b36b8"/>${stjarna(112,40,.9)}${stjarna(122,14,.6)}` : "";
 
-  return `<svg class="kidsvg" viewBox="0 -14 220 326" role="img" aria-label="${p.stulka?'Stúlka':'Drengur'} klædd${p.stulka?'':'ur'} eftir veðri">
+  const efst = galdraHattur ? -14 : (f.hufa ? 26 : f.hetta ? 34 : 40);   // ekkert autt pláss yfir höfðinu
+  const hlidrun = p.galdur ? 9 : 0;                                       // sprotinn þyngir hægri hliðina
+  return `<svg class="kidsvg" viewBox="${hlidrun} ${efst} 220 ${312 - efst}" role="img" aria-label="${p.stulka?'Stúlka':'Drengur'} klædd${p.stulka?'':'ur'} eftir veðri">
     <ellipse cx="110" cy="304" rx="58" ry="7" fill="#000" opacity=".2"/>
     <g class="lean" style="transform:rotate(${(-halla*.5).toFixed(1)}deg)"><g class="body">
       ${skikkja}${harBak}
@@ -615,17 +618,18 @@ function fanaRammi(tms){
 
   // Hviður: af og til kemur vindhnykkur sem lyftir fánanum og eykur blakt
   const hviduMunur = g - v;
-  if (Math.random() < dt * (0.08 + hviduMunur * 0.025)) FANI.hnykkur = 1;
+  const styrkur = Math.min(1, Math.max(0, (v - 1.5) / 4.5));        // 0 í logni/andvara → 1 við 6 m/s
+  if (Math.random() < dt * (0.08 + hviduMunur * 0.025) * styrkur) FANI.hnykkur = 1;
   FANI.hnykkur = Math.max(0, FANI.hnykkur - dt * 0.5);
-  const virkur = v + hviduMunur * FANI.hnykkur * 0.8 + Math.sin(t*0.7) * Math.min(1.5, v*0.15);
+  const virkur = v + (hviduMunur * FANI.hnykkur * 0.8 + Math.sin(t*0.7) * Math.min(1.5, v*0.15)) * styrkur;
 
   // Halli: 55° niður í logni (fáninn hangir með stönginni) → lárétt við 12 m/s
   const markHalli = 55 * (1 - Math.min(1, virkur/12));
   FANI.hallaNu += (markHalli - FANI.hallaNu) * Math.min(1, dt * 1.2);
   const lafir = Math.max(0, 1 - virkur/10);                 // sig í litlum vindi
 
-  const amp = 3 + Math.min(virkur, 22) * 1.15;
-  const w = 1.5 + virkur * 0.28, k = 0.05;
+  const amp = 0.4 + (1.5 + Math.min(virkur, 22) * 1.1) * styrkur;   // nánast kyrr í hægum vindi
+  const w = 0.6 + virkur * 0.28, k = 0.05;
   const ry = (x, fasi) => {
     const s = x / L;                                       // blakt eykst út eftir fánanum
     return amp * s * (Math.sin(k*x - w*t + fasi) + 0.3 * Math.sin(2.3*k*x - 1.5*w*t + fasi*1.7))
@@ -691,11 +695,11 @@ function fanaRammi(tms){
   $("flagCloth").setAttribute("transform", `translate(74 ${FANI.half ? 96 : 26})`);
 
   // Fánalínan flöktir við stöngina
-  const lx = 78, lo = (3 + virkur*0.5) * Math.sin(t*w*0.6);
+  const lx = 78, lo = (0.3 + (2.5 + virkur*0.5) * styrkur) * Math.sin(t*w*0.6);
   $("flagLina").setAttribute("d", `M${lx} 26 Q${(lx + lo).toFixed(1)} 140 ${lx} 238`);
 
   // Laufblöð fjúka framhjá – fleiri og hraðari eftir því sem hvessir
-  const fjoldi = v < 1 ? 0 : Math.min(FANI.lauf.length, Math.round(v / 1.4));
+  const fjoldi = v < 3 ? 0 : Math.min(FANI.lauf.length, Math.round((v - 2) / 1.4));
   const att = 1;                       // speglunin sér um stefnuna
   FANI.lauf.forEach((l, i) => {
     if (i >= fjoldi){ l.el.setAttribute("opacity", "0"); return; }
@@ -826,8 +830,10 @@ async function saekjaMatsedil(){
 function birtaMat(){
   const n = nuna(), idag = n.slice(0,10), kl = Number(n.slice(11,13));
   const eftirMat = kl >= CONFIG.skolalok;              // eftir skóla sýnum við næsta skóladag
-  const naestiSkoladagur = fra => { const d = dagsFra(fra); do { d.setUTCDate(d.getUTCDate()+1); } while (d.getUTCDay()===0 || d.getUTCDay()===6); return d.toISOString().slice(0,10); };
-  const dIdag = dagsFra(idag), helgi = dIdag.getUTCDay()===0 || dIdag.getUTCDay()===6;
+  const naestiSkoladagur = fra => { const d = dagsFra(fra); let n = 0;
+    do { d.setUTCDate(d.getUTCDate()+1); } while ((d.getUTCDay()===0 || d.getUTCDay()===6 || erFri(d.toISOString().slice(0,10))) && ++n < 60);
+    return d.toISOString().slice(0,10); };
+  const dIdag = dagsFra(idag), helgi = dIdag.getUTCDay()===0 || dIdag.getUTCDay()===6 || erFri(idag);
   const synaDag = eftirMat || helgi ? naestiSkoladagur(idag) : idag;
   const dd = dagsFra(synaDag);
   $("mTitill").textContent = "Hádegismatur";
@@ -1050,16 +1056,20 @@ async function saekjaDaga(){
       const til = lesaDags(row[1], artal) || fra;
       const f = (row[4] || "").trim().toLowerCase();
       const fani = /h[aá]lf/.test(f) ? "hálfstöng" : /[ií]slensk|j[aá]/.test(f) ? "íslenski" : "";
-      listi.push({ fra, til: til < fra ? fra : til, heiti: row[2].trim(), frod: (row[3] || "").trim(), fani });
+      const fri = /^(j[aá]|x|1|fr[ií])/i.test((row[5] || "").trim());
+      listi.push({ fra, til: til < fra ? fra : til, heiti: row[2].trim(), frod: (row[3] || "").trim(), fani, fri });
     });
     serdagar = listi.sort((a,b) => a.fra.localeCompare(b.fra));
   } catch(e){ console.warn("Sérstakir dagar:", e); serdagar = serdagar || []; }
   birtaDaga();
   if (spa) try { birta(); } catch(e){ console.error(e); }
+  birtaMat(); birtaBlodru();
 }
 const dagaMunur = (a, b) => Math.round((dagsFra(b) - dagsFra(a)) / 864e5);
 const MAN_STUTT = ["jan.","feb.","mars","apr.","maí","júní","júlí","ág.","sept.","okt.","nóv.","des."];
 const stuttDags = iso => { const d = dagsFra(iso); return `${d.getUTCDate()}. ${MAN_STUTT[d.getUTCMonth()]}`; };
+// Enginn skóli hjá nemendum (starfsdagar, frí) samkvæmt dagar.csv
+const erFri = dags => !!serdagar?.some(d => d.fri && d.fra <= dags && d.til >= dags);
 function dagurIdag(){
   if (!serdagar) return null;
   const idag = nuna().slice(0,10);
@@ -1093,7 +1103,7 @@ function birtaDaga(){
 const MIN_ORD = ["", "ein mínúta", "tvær mínútur", "þrjár mínútur", "fjórar mínútur", "fimm mínútur"];
 const kl2min = s => Number(s.slice(0,2))*60 + Number(s.slice(3,5));
 function stundaskraBod(minNu, vikudagur){
-  if (vikudagur === 0 || vikudagur === 6) return null;
+  if (vikudagur === 0 || vikudagur === 6 || erFri(nuna().slice(0,10))) return null;
   for (const d of CONFIG.dagskra){
     const fra = kl2min(d.fra), til = kl2min(d.til);
     if (minNu >= fra - 5 && minNu < fra){
